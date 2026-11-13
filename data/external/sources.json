@@ -1,0 +1,20 @@
+{
+  "paralelo_bo_historical.csv": {
+    "url": "https://paralelo.bo/api/v1/historical.csv",
+    "retrieved_at_utc": "2026-11-13T04:29:48+00:00",
+    "sha256": "243d4407afae9d91e987779c8ae2c88f6776bf12512f266c555a9fe9430150a9",
+    "rows": 830,
+    "first_date": "2024-08-06",
+    "last_date": "2026-11-13",
+    "note": "CC BY 4.0; mediana P2P, con backfill histórico"
+  },
+  "bcb_tco_daily.csv": {
+    "url": "https://www.bcb.gob.bo/grafico_evolutivo/download.php?serie=tipo_de_cambio&format=csv",
+    "retrieved_at_utc": "2026-11-13T04:29:49+00:00",
+    "sha256": "ccf4cba61cd90df7fc8998035a0bb8742e948fa189110fbd89b2c05739a08490",
+    "rows": 2143,
+    "first_date": "2021-01-01",
+    "last_date": "2026-11-13",
+    "note": "BCB; TCO diario desde 2026-06-29"
+  }
+}

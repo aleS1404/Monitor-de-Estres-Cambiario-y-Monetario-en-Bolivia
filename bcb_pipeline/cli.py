@@ -7,6 +7,7 @@ from .build import build
 from .collector import DEFAULT_DB, collect_loop, collect_once, export_csv
 from .virtual_assets import import_pdfs
 from .download import run_download
+from .historical import fetch_history
 from .parse import parse_workbook, validate_layout
 
 
@@ -48,6 +49,9 @@ def main(argv=None) -> None:
     v.add_argument("pdfs", type=Path, nargs="+")
     v.add_argument("--db", type=Path, default=DEFAULT_DB)
 
+    h = sub.add_parser("fetch-history", help="Descargar series diarias externas del paralelo y TCO del BCB")
+    h.add_argument("--out-dir", type=Path, default=Path("data/external"))
+
     a = ap.parse_args(argv)
     if a.cmd == "download":
         mode, yr = ("all", None) if a.all else (("since", a.since_year) if a.since_year else ("latest", None))
@@ -67,6 +71,9 @@ def main(argv=None) -> None:
         print(export_csv(a.db))
     elif a.cmd == "import-pdf":
         import_pdfs(a.pdfs, a.db)
+    elif a.cmd == "fetch-history":
+        for name, info in fetch_history(a.out_dir).items():
+            print(f"{name}: {info['rows']} filas ({info['first_date']} -> {info['last_date']})")
     elif a.cmd == "check-layout":
         _, cat = parse_workbook(a.file)
         issues = validate_layout(cat)

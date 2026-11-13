@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import warnings
+import inspect
 
 import numpy as np
 import pandas as pd
@@ -14,9 +15,20 @@ from .stationarity import adf
 MIN_OBS = 30
 
 
+def daily_returns(series: pd.Series) -> pd.Series:
+    """Retornos logarítmicos; un hueco de calendario no es un retorno diario."""
+    s = series.dropna().sort_index()
+    ret = np.log(s).diff()
+    if isinstance(s.index, pd.DatetimeIndex):
+        ret[s.index.to_series().diff().dt.days.ne(1)] = np.nan
+    return ret.dropna()
+
+
 def ar1_gap(gap: pd.Series) -> dict:
     """Ajusta gap_t = c + φ gap_{t-1} + ε. Vida media = ln(0,5)/ln(φ) (en unidades de la serie)."""
     g = gap.dropna()
+    if isinstance(g.index, pd.DatetimeIndex) and (g.index.to_series().diff().dt.days.dropna() > 1).any():
+        return {"ok": False, "n": len(g), "motivo": "la serie tiene huecos; AR(1) diario requiere fechas consecutivas"}
     if len(g) < MIN_OBS:
         return {"ok": False, "n": len(g), "motivo": f"se necesitan ≥{MIN_OBS} observaciones (hay {len(g)})"}
     res = AutoReg(g.to_numpy(), lags=1, trend="c").fit()
@@ -42,23 +54,33 @@ def cross_correlation(x: pd.Series, y: pd.Series, max_lag: int = 10) -> pd.DataF
 
 
 def lead_lag(paralelo: pd.Series, oficial: pd.Series, max_lag: int = 7) -> dict:
-    """H5: ¿el paralelo se adelanta al oficial? Correlación cruzada de retornos + Granger."""
-    r_par = np.log(paralelo).diff().dropna()
-    r_of = np.log(oficial).diff().dropna()
-    df = pd.concat([r_par.rename("par"), r_of.rename("of")], axis=1).dropna()
+    """H5: correlación cruzada y Granger en días hábiles del régimen flexible."""
+    levels = pd.concat([paralelo.rename("par"), oficial.rename("of")], axis=1).dropna().sort_index()
+    levels = levels[levels.index >= "2026-07-01"]  # excluye el salto inicial del nuevo régimen
+    if isinstance(levels.index, pd.DatetimeIndex):
+        levels = levels[levels.index.dayofweek < 5]
+    df = np.log(levels).diff()
+    if isinstance(levels.index, pd.DatetimeIndex):
+        df.loc[levels.index.to_series().diff().dt.days.gt(4)] = np.nan
+    df = df.dropna()
     if len(df) < 3 * MIN_OBS:
-        return {"ok": False, "n": len(df), "motivo": f"se necesitan ≥{3 * MIN_OBS} retornos diarios comunes (hay {len(df)})"}
+        return {"ok": False, "n": len(df), "motivo": f"se necesitan ≥{3 * MIN_OBS} retornos hábiles comunes desde julio-2026 (hay {len(df)})"}
+    if (df["of"].abs() > 1e-12).sum() < 20:
+        return {"ok": False, "n": len(df), "motivo": "menos de 20 cambios observados del TCO"}
     cc = cross_correlation(df["par"], df["of"], max_lag)
     best = cc.loc[cc[cc.k != 0]["corr"].abs().idxmax()]
-    out = {"ok": True, "n": len(df), "cc": cc, "rezago_max": int(best.k), "corr_max": float(best["corr"])}
+    out = {"ok": True, "n": len(df), "cambios_tco": int((df["of"].abs() > 1e-12).sum()),
+           "cc": cc, "rezago_max": int(best.k), "corr_max": float(best["corr"])}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         for name, cols in (("par→of", ["of", "par"]), ("of→par", ["par", "of"])):
             try:
-                g = grangercausalitytests(df[cols], maxlag=min(max_lag, 5), verbose=False)
-                out[f"granger_{name}"] = {L: float(g[L][0]["ssr_ftest"][1]) for L in g}
-            except Exception:  # noqa: BLE001
+                opts = {"verbose": False} if "verbose" in inspect.signature(grangercausalitytests).parameters else {}
+                g = grangercausalitytests(df[cols], maxlag=min(max_lag, 5), **opts)
+                out[f"granger_{name}"] = {int(L): float(g[L][0]["ssr_ftest"][1]) for L in g}
+            except Exception as exc:  # noqa: BLE001
                 out[f"granger_{name}"] = {}
+                out[f"error_{name}"] = str(exc)
     return out
 
 

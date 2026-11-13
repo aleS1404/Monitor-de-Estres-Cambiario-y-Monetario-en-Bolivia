@@ -141,6 +141,20 @@ def fig_valoracion(m, path) -> dict:
             "me_usd_a": float(m.depositos_me[a]), "me_usd_b": float(m.depositos_me[b])}
 
 
+def fig_gap(gap_daily: pd.DataFrame, path: Path) -> None:
+    x = gap_daily[gap_daily.index >= "2025-12-01"]
+    fig, ax = plt.subplots(2, 1, figsize=(10, 5.3), sharex=True)
+    ax[0].plot(x.index, x["paralelo"], label="Mediana P2P (paralelo.bo)", lw=1)
+    ax[0].plot(x.index, x["oficial"], label="Referencia BCB / TCO", lw=1)
+    ax[0].set_ylabel("Bs/USD"); ax[0].legend()
+    ax[1].plot(x.index, x["brecha_pct"], color="C3", lw=1)
+    ax[1].axhline(0, color="gray", lw=.8)
+    ax[1].set_ylabel("Brecha (%)")
+    for a in ax:
+        a.axvline(data.FECHA_FLEXIBLE, color="black", ls="--", lw=.8)
+    _save(fig, path)
+
+
 def tc_regimes_table(m: pd.DataFrame) -> pd.DataFrame:
     s = data.tc_efectivo(m)
     r = np.log(s).diff().dropna() * 100
@@ -158,9 +172,12 @@ def run(out_dir: Path | None = None, validate: bool = True) -> dict:
     out = Path(out_dir or ROOT / "reports"); figs = out / "figures"; figs.mkdir(parents=True, exist_ok=True)
     m, d = data.load_monthly(), data.load_daily_key()
     col_p2p, bcb_pdf = data.load_p2p()
-    gap_d = data.build_gap(m, d, col_p2p, bcb_pdf)
+    external, tco_daily = data.load_external_parallel(), data.load_bcb_tco()
+    gap_d = data.build_gap(m, d, col_p2p, bcb_pdf, external=external, official_tco=tco_daily)
     R: dict = {"generado": pd.Timestamp.now().isoformat(timespec="seconds"),
                "ultimo_mes": str(m.index.max().date()), "n_meses": int(len(m))}
+    sources_path = data.EXTERNAL_DIR / "sources.json"
+    R["fuentes_historicas"] = json.loads(sources_path.read_text(encoding="utf-8")) if sources_path.exists() else {}
 
     # Cap. 1-2
     adf_t = st.adf_table(m, ["rib", "ipc", "depositos_me", "base_monetaria"])
@@ -189,8 +206,9 @@ def run(out_dir: Path | None = None, validate: bool = True) -> dict:
         R["sarima"][col] = e
 
     # Cap. 3
-    gm = gp.monthly_gap(gap_d)
-    ci = mk.stress_index(m, gm if len(gm) else None)
+    # El índice principal conserva los mismos dos componentes en toda la muestra.
+    # La brecha solo existe desde 2024 y se analiza por separado.
+    ci = mk.stress_index(m)
     states = mk.classify(ci["indice"]); fit = mk.fit_markov(states)
     fig_markov(ci, states, fit, figs / "fig_markov_estados.png", figs / "fig_markov_matriz.png")
     cur = int(states.iloc[-1])
@@ -220,11 +238,22 @@ def run(out_dir: Path | None = None, validate: bool = True) -> dict:
     # Brecha (H1, H3, H5): solo con datos reales
     reg_tbl = tc_regimes_table(m)
     R["tc_regimenes"] = reg_tbl.to_dict("records")
-    R["brecha"] = {"n_dias": int(len(gap_d))}
+    R["brecha"] = {"n_dias": int(len(gap_d)),
+                   "fuente": str(gap_d["fuente_p2p"].iloc[0]) if len(gap_d) else "sin datos",
+                   "primera_fecha": str(gap_d.index.min().date()) if len(gap_d) else None,
+                   "ultima_fecha": str(gap_d.index.max().date()) if len(gap_d) else None,
+                   "tco_diario_dias": int(len(tco_daily))}
     if len(gap_d) >= gp.MIN_OBS:
-        R["brecha"]["ar1"] = {k: (v if not isinstance(v, dict) else v) for k, v in gp.ar1_gap(gap_d["brecha_pct"]).items()}
+        if len(external):
+            fig_gap(gap_d, figs / "fig_brecha.png")
+        R["brecha"]["ar1"] = gp.ar1_gap(gap_d.loc[gap_d.index >= data.FECHA_FLEXIBLE, "brecha_pct"])
         ll = gp.lead_lag(gap_d["paralelo"], gap_d["oficial"]); ll.pop("cc", None); R["brecha"]["lead_lag"] = ll
-        R["brecha"]["vol"] = gp.volatility_by_regime(np.log(gap_d["paralelo"]).diff().dropna(), str(data.FECHA_FLEXIBLE.date()))
+        ret = gp.daily_returns(gap_d["paralelo"])
+        same_method = ret[(ret.index >= "2026-05-04") & (ret.index <= "2026-09-03")]
+        R["brecha"]["vol"] = gp.volatility_by_regime(same_method, str(data.FECHA_FLEXIBLE.date()))
+        sensitivity = same_method[(same_method.index < data.FECHA_FLEXIBLE) |
+                                  (same_method.index >= data.FECHA_FLEXIBLE + pd.Timedelta(days=7))]
+        R["brecha"]["vol_sin_primera_semana"] = gp.volatility_by_regime(sensitivity, str(data.FECHA_FLEXIBLE.date()))
 
     (out / "results.json").write_text(json.dumps(R, indent=2, default=str, ensure_ascii=False), encoding="utf-8")
     _informe(out, R, m, adf_t, ep, rb, reg_tbl, res_by, fit, ci, states, rs)
@@ -249,10 +278,20 @@ def _informe(out: Path, R: dict, m, adf_t, ep, rb, reg_tbl, res_by, fit, ci, sta
     A("## 2. Datos\n")
     A("- **BCB, Estadísticas Semanales (Excel):** variables mensuales desde 1987 (aquí desde 1989), más semanas y días recientes.")
     A("- **Tipo de cambio:** tres regímenes observables en el Excel: fijo (6,96), valor referencial (dic-2025→may-2026) y oficial flexible (jun-2026→).")
-    A(f"- **Brecha oficial-paralelo:** {g['n_dias']} días con dato de paralelo disponibles. "
-      + ("Los resultados de H1, H3 formal y H5 se evalúan por separado según su cobertura." if g["n_dias"] >= gp.MIN_OBS else
-         f"**Insuficiente** (mínimo {gp.MIN_OBS} para H1); las hipótesis H1, H3 (formal) y H5 quedan pendientes hasta acumular historial P2P con el recolector o importar los PDF del BCB."))
+    A(f"- **Brecha oficial-paralelo:** {g['n_dias']} fechas ({g['primera_fecha']} a {g['ultima_fecha']}). "
+      f"Paralelo: {g['fuente']}; TCO diario del BCB: {g['tco_diario_dias']} fechas desde el régimen flexible. "
+      "No se empalman la mediana externa, la cotización Binance del recolector ni el promedio USDT del PDF.")
+    if R["fuentes_historicas"]:
+        A("- **Procedencia y licencia:** paralelo.bo publica su [histórico diario](https://paralelo.bo/api/v1/historical.csv) como CC BY 4.0; "
+          "su metodología documenta backfill anterior al lanzamiento y cambios de cálculo. El TCO diario viene de la "
+          "[exportación del BCB](https://www.bcb.gob.bo/grafico_evolutivo/download.php?serie=tipo_de_cambio&format=csv). "
+          "Las URL, fecha de descarga y SHA-256 están en `data/external/sources.json`.")
+        A("- **Definición:** el paralelo externo es una mediana de anuncios P2P entre plataformas, no una operación ejecutada ni el precio de venta de Binance. "
+          "Antes del régimen flexible se usa el tipo de referencia del Excel BCB; desde el 29-jun-2026 se usa el TCO diario. "
+          "El tramo fijo de compra a 6,86 del CSV TCO no se usa como venta a 6,96.")
     A("\n![Series](figures/fig_series.png)\n")
+    if g["n_dias"] >= gp.MIN_OBS and R["fuentes_historicas"]:
+        A("![Brecha cambiaria observada](figures/fig_brecha.png)\n")
     v_ = R["valoracion"]
     A("### Hallazgo: el efecto de valoración en la bolivianización\n")
     A(f"Los cuadros del BCB expresan los saldos en millones de **USD**: los depósitos en moneda extranjera están en dólares reales, pero los depósitos en bolivianos se convierten al tipo de cambio vigente. Al pasar el tipo de cambio de 6,96 a ~12, el saldo en bolivianos medido en USD cae mecánicamente. Con las mismas filas (moneda nacional y extranjera de los cuadros), entre {v_['fecha_a']} y {v_['fecha_b']} la bolivianización calculada **al tipo de cambio vigente** pasó de {v_['vigente_a']:.1f}% a {v_['vigente_b']:.1f}%, pero **a tipo de cambio constante (6,96)** pasó de {v_['constante_a']:.1f}% a {v_['constante_b']:.1f}%; los depósitos en dólares casi no cambiaron ({v_['me_usd_a']:,.0f} → {v_['me_usd_b']:,.0f} MM USD). La caída es contable, no una fuga hacia el dólar. Por eso el índice de estrés usa la versión sin efecto de valoración. La cifra oficial del BCB (fila «Bolivianización», {v_['oficial_a']:.1f}% → {v_['oficial_b']:.1f}%) usa otra definición que difiere de la calculada hasta ~4 pp en 2023-24, probablemente por el tratamiento de depósitos con mantenimiento de valor (no verificado), por lo que **no se mezclan ambas**. Se verificó además que el BCB convirtió a 6,96 hasta may-2026, no al valor referencial.\n")
@@ -284,7 +323,8 @@ def _informe(out: Path, R: dict, m, adf_t, ep, rb, reg_tbl, res_by, fit, ci, sta
       + ("Se rechaza orden 1 al 5%: la cadena de primer orden es una aproximación; parte de la persistencia proviene de que el índice usa variaciones sobre ventanas móviles (12 y 6 meses) que se solapan. " if o2["p_valor"] < 0.05 else "No se rechaza orden 1 al 5%. ")
       + f"Con {int(np.sum(mk_['conteos']))} transiciones el contraste es potente, pero las observaciones no son independientes.\n")
     A("**Validación con episodios conocidos** (fracción de meses en cada estado):\n"); A(md_table(ep.round(2))); A("")
-    A("Lectura honesta: el índice sin brecha cambiaria **no refleja la tensión cambiaria de dic-2025→may-2026** (aparece como Estable), porque ese episodio se vio en el mercado paralelo y no en reservas ni bolivianización. Es precisamente el componente que aportaría la brecha cuando haya historial P2P.\n")
+    A("Lectura honesta: el índice de reservas y bolivianización **no refleja la tensión cambiaria de dic-2025→may-2026** (aparece como Estable). "
+      "La brecha observada se analiza por separado: incorporarla solo desde 2024 cambiaría el número de componentes del índice a mitad de la muestra e invalidaría la comparación histórica de estados.\n")
     A("**Robustez a los umbrales:**\n"); A(md_table(rb.round(2))); A("")
     A("![Estados](figures/fig_markov_estados.png)\n![Matriz](figures/fig_markov_matriz.png)\n")
     A("### Cap. 6: ARIMA/SARIMA (Box-Jenkins)\n")
@@ -334,20 +374,38 @@ def _informe(out: Path, R: dict, m, adf_t, ep, rb, reg_tbl, res_by, fit, ci, sta
     if "fx_ejemplo" in R:
         fx = R["fx_ejemplo"]; p = fx["params"]
         A(f"**Ejemplo del simulador cambiario:** USD {fx['usd']:,} a {fx['dias']} días. Hoy: Bs {fx['hoy']:,.0f}. Rango 5-50-95%: Bs {fx['p5']:,.0f} / {fx['p50']:,.0f} / {fx['p95']:,.0f}. "
-          f"Parámetros: σ diaria {p['sigma_diario']*100:.2f}% estimada con solo {p['n']} variaciones del oficial desde ago-2026 y deriva 0. **Muestra muy pequeña: el rango es indicativo.**\n")
+          f"Parámetros: σ diaria {p['sigma_diario']*100:.2f}% estimada con {p['n']} variaciones del TCO desde ago-2026 y deriva 0. **Rango indicativo, sensible al régimen y a las colas pesadas.**\n")
     A("Detección de anomalías: residuos estandarizados de SARIMA con |z| > 2,5 (se descartan los primeros 24 meses por el arranque del filtro).\n")
     A("![Anomalías](figures/fig_anomalias.png)\n")
     A("## 4. Régimen cambiario: evidencia descriptiva (H3)\n")
     A(md_table(reg_tbl.round(3))); A("")
-    A("La variación mensual del tipo de cambio de referencia es nula bajo el régimen fijo (2011-2025) y pasa a ser grande bajo el referencial y el flexible, un cambio de régimen evidente (incluye el salto único jun→jul-2026, de 9,76 a 12,15). La comparación formal de volatilidad del paralelo (prueba de Levene) requiere historial P2P.\n")
+    A("La variación mensual del tipo de cambio de referencia es nula bajo el régimen fijo (2011-2025) y pasa a ser grande bajo el referencial y el flexible; esta descripción incluye el salto de transición jun→jul-2026. "
+      "Para H3 formal se comparan retornos diarios de la misma mediana P2P entre 4-may y 3-sep-2026, antes del cambio de metodología del proveedor del 4-sep. "
+      "Se reporta una sensibilidad que excluye la primera semana flexible.\n")
     A("## 5. Estado de las hipótesis\n")
-    ar = g.get("ar1")
-    hy = [("H1", "Brecha estacionaria con vida media corta", f"AR(1): φ={ar['phi']:.3f}, vida media {ar['vida_media']:.1f} días" if ar and ar.get("ok") else "Pendiente: faltan datos P2P"),
+    ar, vol, ll = g.get("ar1", {}), g.get("vol", {}), g.get("lead_lag", {})
+    h1 = (f"n={ar['n']}; φ={ar['phi']:.3f}; vida media={ar['vida_media']:.1f} días; ADF p={ar['adf']['p_valor']:.3g}. "
+          + ("Compatible con estacionariedad y vida media <30 días." if ar["adf"]["estacionaria_5%"] and 0 < ar["phi"] < 1 and ar["vida_media"] < 30 else
+             "No respalda conjuntamente estacionariedad y vida media <30 días.")) if ar.get("ok") else "Pendiente: " + ar.get("motivo", "faltan datos P2P")
+    h3 = (f"n={vol['n_antes']}/{vol['n_despues']}; σ={vol['sd_antes']:.2%}/{vol['sd_despues']:.2%}; razón={vol['razon']:.2f}; Levene p={vol['levene_p']:.3g}. "
+          + ("Cambio de volatilidad compatible con los datos." if vol["levene_p"] < .05 else "Sin evidencia de cambio al 5%.")) if vol.get("ok") else "Pendiente: " + vol.get("motivo", "faltan retornos a ambos lados")
+    fwd = ll.get("granger_par→of", {}).get(1)
+    rev = ll.get("granger_of→par", {}).get(1)
+    h5 = (f"n={ll['n']} días hábiles; correlación máxima en k={ll['rezago_max']}: {ll['corr_max']:.3f}; "
+          f"Granger lag 1 paralelo→oficial p={fwd:.3g}, oficial→paralelo p={rev:.3g}. "
+          + ("Compatible con adelanto del paralelo; no prueba causalidad." if ll["rezago_max"] > 0 and fwd < .05 and rev >= .05 else "Evidencia mixta o insuficiente de adelanto.")) if ll.get("ok") and fwd is not None and rev is not None else "Pendiente: " + ll.get("motivo", "no se pudo estimar Granger")
+    hy = [("H1", "Brecha estacionaria con vida media <30 días", h1),
           ("H2", "Estados persistentes (Markov)", f"p_Estable→Estable={mk_['P'][0][0]:.2f}; independencia rechazada; orden 1 {'rechazado' if o2['p_valor']<0.05 else 'no rechazado'} (p={o2['p_valor']:.3f})"),
-          ("H3", "Volatilidad cambia con el régimen", f"Levene p={g['vol']['levene_p']:.3f}" if g.get("vol", {}).get("ok") else "Descriptivo: sí (ver §4). Formal: pendiente; se necesitan al menos 10 retornos antes y después del 29-jun-2026"),
+          ("H3", "Volatilidad cambia con el régimen", h3),
           ("H4", "SARIMA supera al ingenuo", "Mixto (ver validación)"),
-          ("H5", "El paralelo se adelanta al oficial", "Pendiente: se necesitan al menos 90 retornos diarios comunes" if not g.get("lead_lag", {}).get("ok") else f"Rezago de máxima correlación: {g['lead_lag']['rezago_max']} días")]
+          ("H5", "El paralelo se adelanta al oficial", h5)]
     A(md_table(pd.DataFrame(hy, columns=["#", "Hipótesis", "Resultado"]))); A("")
+    if g.get("vol_sin_primera_semana", {}).get("ok"):
+        v = g["vol_sin_primera_semana"]
+        A(f"**Sensibilidad H3:** al excluir los primeros siete días del régimen flexible, razón de desviaciones={v['razon']:.2f}, Levene p={v['levene_p']:.3g} (n={v['n_antes']}/{v['n_despues']}).\n")
+    if ll.get("ok"):
+        A("**Cautela H5:** el TCO se publica con rezago respecto a las transacciones bancarias y el paralelo se actualiza continuamente. "
+          "Una correlación con k=1 puede reflejar el calendario de publicación. Granger mide capacidad predictiva condicional, no causalidad; los rezagos 2–5 son exploratorios.\n")
     A("## 6. Limitaciones\n")
     for t in ["El régimen flexible tiene pocas observaciones (desde jun-2026): todo lo post-cambio es exploratorio.",
               "El índice de estrés usa estandarización con toda la muestra y umbrales por cuantiles (decisión del autor); describe, no predice.",

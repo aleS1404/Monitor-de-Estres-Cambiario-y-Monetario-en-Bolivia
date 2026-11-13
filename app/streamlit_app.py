@@ -26,17 +26,18 @@ PAGES = ["Semáforo del sistema", "Brecha cambiaria", "Reservas y depósitos", "
 
 
 # ---------------------------------------------------------------- datos (con caché)
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=3600)
 def get_data():
     m, d = data.load_monthly(), data.load_daily_key()
     col, pdf = data.load_p2p()
     return m, d, col, pdf
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=3600)
 def get_gap(use_demo: bool):
     m, d, col, pdf = get_data()
-    g = data.build_gap(m, d, col, pdf)
+    g = data.build_gap(m, d, col, pdf, external=data.load_external_parallel(),
+                       official_tco=data.load_bcb_tco())
     if len(g) < gp.MIN_OBS and use_demo:
         return demo.synthetic_gap(m, d), True
     return g, False
@@ -75,8 +76,7 @@ def page_semaforo(m, gap_real):
         c1, c2 = st.columns(2)
         q1 = c1.slider("Percentil de inicio de **Tensión**", 0.40, 0.80, 0.60, 0.01)
         q2 = c2.slider("Percentil de inicio de **Crisis**", 0.80, 0.97, 0.85, 0.01)
-    gm = gp.monthly_gap(gap_real) if len(gap_real) >= gp.MIN_OBS else None
-    ci = mk.stress_index(m, gm)
+    ci = mk.stress_index(m)
     states = mk.classify(ci["indice"], (q1, q2))
     fit = mk.fit_markov(states)
     cur = int(states.iloc[-1])
@@ -92,8 +92,7 @@ def page_semaforo(m, gap_real):
     c.dataframe(comp.rename("z").round(2).to_frame(), width="stretch")
     st.caption("Los estados son **relativos a la historia 1989-hoy** (percentiles del índice): «Crisis» significa que el índice "
                "está en el tramo más alto de su historia, no es un diagnóstico de crisis. "
-               + ("Incluye la brecha cambiaria." if gm is not None else
-                  "**No incluye la brecha cambiaria** (aún no hay historial P2P suficiente)."))
+               "La brecha se analiza por separado para conservar los mismos componentes en toda la serie.")
 
     fig = go.Figure(); shade_states(fig, states)
     line(fig, ci.index, ci["indice"], "Índice", line=dict(color="black", width=1.2))
@@ -144,6 +143,9 @@ def page_brecha(m, d, gap_df, is_demo):
         return
     if is_demo:
         st.error("🧪 **DATOS DEMO SIMULADOS** — no son cotizaciones reales; sirven solo para ver cómo luce la pantalla.")
+    else:
+        st.caption(f"Fuente del paralelo: **{gap_df['fuente_p2p'].iloc[0]}**; "
+                   "oficial diario: BCB (TCO) desde 29-jun-2026. La mediana P2P es un precio anunciado, no una transacción ejecutada.")
     fig = go.Figure()
     line(fig, gap_df.index, gap_df["oficial"], "Oficial (referencia)"); line(fig, gap_df.index, gap_df["paralelo"], "Paralelo (USDT)")
     fig.update_layout(height=300, title="Oficial vs. paralelo (Bs/USD)", margin=dict(l=10, r=10, t=40, b=10))
@@ -173,11 +175,22 @@ def page_brecha(m, d, gap_df, is_demo):
         fl.add_hline(y=cc.attrs["banda95"], line_dash="dash", line_color="red"); fl.add_hline(y=-cc.attrs["banda95"], line_dash="dash", line_color="red")
         fl.update_layout(height=260, title="Correlación cruzada de retornos (k>0: el paralelo se adelanta al oficial)", margin=dict(l=10, r=10, t=40, b=10))
         st.plotly_chart(fl, width="stretch")
+        fwd = ll.get("granger_par→of", {}).get(1)
+        rev = ll.get("granger_of→par", {}).get(1)
+        if fwd is not None and rev is not None:
+            st.caption(f"H5: {ll['n']} retornos hábiles, k={ll['rezago_max']}, correlación={ll['corr_max']:.3f}; "
+                       f"Granger lag 1 paralelo→oficial p={fwd:.3g}, oficial→paralelo p={rev:.3g}. "
+                       "La hora de publicación puede explicar el adelanto; Granger no demuestra causalidad.")
     else:
         st.caption(ll["motivo"])
-    vol = gp.volatility_by_regime(np.log(gap_df["paralelo"]).diff().dropna(), str(data.FECHA_FLEXIBLE.date()))
+    ret = gp.daily_returns(gap_df["paralelo"])
+    ret = ret[(ret.index >= "2026-05-04") & (ret.index <= "2026-09-03")]
+    vol = gp.volatility_by_regime(ret, str(data.FECHA_FLEXIBLE.date()))
     if vol["ok"]:
-        st.caption(f"Volatilidad diaria del paralelo: antes {vol['sd_antes']:.2%}, después {vol['sd_despues']:.2%} (Levene p={vol['levene_p']:.3f}).")
+        st.caption(f"H3, mediana P2P con método comparable (4-may a 3-sep-2026): "
+                   f"σ diaria antes {vol['sd_antes']:.2%} (n={vol['n_antes']}), "
+                   f"después {vol['sd_despues']:.2%} (n={vol['n_despues']}), "
+                   f"razón {vol['razon']:.2f}; Levene p={vol['levene_p']:.3g}.")
 
 
 def page_reservas(m):
@@ -278,7 +291,7 @@ def page_simulador(m, d, collector):
     if fuente.startswith("Oficial"):
         p = sim.fx_params(data.official_points(m, d))
         if p.get("ok"):
-            s0, sig, nota = p["s0"], p["sigma_diario"], f"σ estimada con solo {p['n']} variaciones (excluye el salto jun→jul-2026)."
+            s0, sig, nota = p["s0"], p["sigma_diario"], f"σ estimada con {p['n']} variaciones diarias del TCO (excluye el salto jun→jul-2026)."
     elif fuente.startswith("P2P"):
         if len(collector) >= gp.MIN_OBS:
             p = sim.fx_params(collector["p2p_venta"].dropna())
@@ -293,7 +306,7 @@ def page_simulador(m, d, collector):
     s0 = c1.number_input("Tipo de cambio inicial (Bs/USD)", 5.0, 30.0, float(round(s0, 2)), 0.01)
     mu = c2.slider("Deriva diaria supuesta (%)", -0.20, 0.20, 0.0, 0.01) / 100
     if nota:
-        st.caption(nota + " **Muestra pequeña: el rango es indicativo.**")
+        st.caption(nota + " **Rango indicativo; sensible a cambios de régimen.**")
     out = sim.fx_cost_simulation(usd, days, s0, mu, sig)
     k = st.columns(4)
     k[0].metric("Costo hoy (Bs)", f"{out['hoy']:,.0f}")
@@ -340,7 +353,7 @@ def page_metodologia():
 | 6 ARIMA/SARIMA | Box-Jenkins: identificación, estimación, diagnóstico, pronóstico, validación móvil |
 | 7 Aplicaciones | GBM y Monte Carlo; detección de anomalías |
 
-**Datos:** BCB Estadísticas Semanales (Excel), PDF de activos virtuales del BCB y DolarApi (recolector propio).
+**Datos:** BCB Estadísticas Semanales (Excel), [TCO diario BCB](https://www.bcb.gob.bo/grafico_evolutivo/download.php?serie=tipo_de_cambio&format=csv), [mediana P2P histórica de paralelo.bo](https://paralelo.bo/api/v1/historical.csv) (CC BY 4.0), PDF de activos virtuales del BCB y DolarApi (recolector propio). La mediana P2P no equivale a Binance ni al PDF.
 **Hallazgo clave:** la caída de la bolivianización medida al tipo de cambio vigente en 2026 es un efecto de valoración, no una fuga hacia el dólar.
 **Informe completo:** `reports/INFORME.md`.
 """)

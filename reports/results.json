@@ -1,7 +1,27 @@
 {
-  "generado": "2026-11-12T23:57:56",
+  "generado": "2026-11-13T00:39:39",
   "ultimo_mes": "2026-10-31",
   "n_meses": 454,
+  "fuentes_historicas": {
+    "paralelo_bo_historical.csv": {
+      "url": "https://paralelo.bo/api/v1/historical.csv",
+      "retrieved_at_utc": "2026-11-13T04:29:48+00:00",
+      "sha256": "243d4407afae9d91e987779c8ae2c88f6776bf12512f266c555a9fe9430150a9",
+      "rows": 830,
+      "first_date": "2024-08-06",
+      "last_date": "2026-11-13",
+      "note": "CC BY 4.0; mediana P2P, con backfill histórico"
+    },
+    "bcb_tco_daily.csv": {
+      "url": "https://www.bcb.gob.bo/grafico_evolutivo/download.php?serie=tipo_de_cambio&format=csv",
+      "retrieved_at_utc": "2026-11-13T04:29:49+00:00",
+      "sha256": "ccf4cba61cd90df7fc8998035a0bb8742e948fa189110fbd89b2c05739a08490",
+      "rows": 2143,
+      "first_date": "2021-01-01",
+      "last_date": "2026-11-13",
+      "note": "BCB; TCO diario desde 2026-06-29"
+    }
+  },
   "adf": [
     {
       "variable": "rib",
@@ -1177,17 +1197,17 @@
     "dias": 90,
     "params": {
       "ok": true,
-      "n": 15,
-      "mu_diario": -3.7611207977810344e-05,
-      "sigma_diario": 0.0037028548911595656,
-      "sigma_anual": 0.0707429433648281,
-      "s0": 11.89,
-      "fecha": "2026-11-06 00:00:00"
+      "n": 104,
+      "mu_diario": -0.0003717334293989845,
+      "sigma_diario": 0.017286893164425478,
+      "sigma_anual": 0.330265630177536,
+      "s0": 11.67,
+      "fecha": "2026-11-13 00:00:00"
     },
-    "hoy": 118900.0,
-    "p5": 112118.66414338468,
-    "p50": 118789.22062823977,
-    "p95": 125917.69203902294
+    "hoy": 116700.0,
+    "p5": 87784.05931176187,
+    "p50": 114971.89072492399,
+    "p95": 150921.42496691877
   },
   "tc_regimenes": [
     {
@@ -1210,6 +1230,71 @@
     }
   ],
   "brecha": {
-    "n_dias": 16
+    "n_dias": 830,
+    "fuente": "paralelo.bo (mediana P2P)",
+    "primera_fecha": "2024-08-06",
+    "ultima_fecha": "2026-11-13",
+    "tco_diario_dias": 138,
+    "ar1": {
+      "ok": true,
+      "n": 138,
+      "phi": 0.8415420830491596,
+      "c": 0.10060602646972529,
+      "sigma": 1.7181069674993845,
+      "vida_media": 4.017795998353114,
+      "media_larga": 0.6349069103371908,
+      "banda95": [
+        -5.598973624093438,
+        6.868787444767819
+      ],
+      "adf": {
+        "estadistico": -4.68819720270228,
+        "p_valor": 8.855557920963721e-05,
+        "rezagos": 5,
+        "n": 132,
+        "critico_5%": -2.8836966192225284,
+        "estacionaria_5%": true
+      },
+      "se_phi": 0.04621305828688442
+    },
+    "lead_lag": {
+      "ok": true,
+      "n": 97,
+      "cambios_tco": 85,
+      "rezago_max": 1,
+      "corr_max": 0.6576996723573723,
+      "granger_par→of": {
+        "1": 9.211884475647662e-10,
+        "2": 5.456743741498792e-07,
+        "3": 3.4753257904042377e-06,
+        "4": 1.552214222989401e-05,
+        "5": 5.7445944043892935e-08
+      },
+      "granger_of→par": {
+        "1": 0.29282244982319167,
+        "2": 0.04702837625087386,
+        "3": 0.11084762052022433,
+        "4": 0.48871352045182737,
+        "5": 0.36547789124276997
+      }
+    },
+    "vol": {
+      "ok": true,
+      "n_antes": 56,
+      "n_despues": 67,
+      "sd_antes": 0.004696869299922601,
+      "sd_despues": 0.011234882921635206,
+      "razon": 2.3919939440981133,
+      "levene_p": 3.8246501760156e-05
+    },
+    "vol_sin_primera_semana": {
+      "ok": true,
+      "n_antes": 56,
+      "n_despues": 60,
+      "sd_antes": 0.004696869299922601,
+      "sd_despues": 0.011813143636102192,
+      "razon": 2.5151101471562898,
+      "levene_p": 1.706654820132905e-05
+    }
   }
 }

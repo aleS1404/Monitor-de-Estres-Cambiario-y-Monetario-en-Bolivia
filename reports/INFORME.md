@@ -1,6 +1,6 @@
 # Informe: Monitor de estrés cambiario y monetario de Bolivia
 
-*Generado automáticamente el 2026-11-12 · datos mensuales hasta 2026-10-31 (454 meses).*
+*Generado automáticamente el 2026-11-13 · datos mensuales hasta 2026-10-31 (454 meses).*
 
 ## 1. Resumen
 
@@ -12,9 +12,13 @@ Con la serie oficial del BCB (1989-2026) se construye un índice de estrés a pa
 
 - **BCB, Estadísticas Semanales (Excel):** variables mensuales desde 1987 (aquí desde 1989), más semanas y días recientes.
 - **Tipo de cambio:** tres regímenes observables en el Excel: fijo (6,96), valor referencial (dic-2025→may-2026) y oficial flexible (jun-2026→).
-- **Brecha oficial-paralelo:** 16 días con dato de paralelo disponibles. **Insuficiente** (mínimo 30 para H1); las hipótesis H1, H3 (formal) y H5 quedan pendientes hasta acumular historial P2P con el recolector o importar los PDF del BCB.
+- **Brecha oficial-paralelo:** 830 fechas (2024-08-06 a 2026-11-13). Paralelo: paralelo.bo (mediana P2P); TCO diario del BCB: 138 fechas desde el régimen flexible. No se empalman la mediana externa, la cotización Binance del recolector ni el promedio USDT del PDF.
+- **Procedencia y licencia:** paralelo.bo publica su [histórico diario](https://paralelo.bo/api/v1/historical.csv) como CC BY 4.0; su metodología documenta backfill anterior al lanzamiento y cambios de cálculo. El TCO diario viene de la [exportación del BCB](https://www.bcb.gob.bo/grafico_evolutivo/download.php?serie=tipo_de_cambio&format=csv). Las URL, fecha de descarga y SHA-256 están en `data/external/sources.json`.
+- **Definición:** el paralelo externo es una mediana de anuncios P2P entre plataformas, no una operación ejecutada ni el precio de venta de Binance. Antes del régimen flexible se usa el tipo de referencia del Excel BCB; desde el 29-jun-2026 se usa el TCO diario. El tramo fijo de compra a 6,86 del CSV TCO no se usa como venta a 6,96.
 
 ![Series](figures/fig_series.png)
+
+![Brecha cambiaria observada](figures/fig_brecha.png)
 
 ### Hallazgo: el efecto de valoración en la bolivianización
 
@@ -80,7 +84,7 @@ Probabilidades desde el estado actual: a 1 mes(es): Estable 93.2%, Tensión 6.4%
 | Transición cambiaria dic-2025→may-2026 | 6 | 1.000 | 0.000 | 0.000 |
 | Régimen flexible jun-2026→ | 5 | 1.000 | 0.000 | 0.000 |
 
-Lectura honesta: el índice sin brecha cambiaria **no refleja la tensión cambiaria de dic-2025→may-2026** (aparece como Estable), porque ese episodio se vio en el mercado paralelo y no en reservas ni bolivianización. Es precisamente el componente que aportaría la brecha cuando haya historial P2P.
+Lectura honesta: el índice de reservas y bolivianización **no refleja la tensión cambiaria de dic-2025→may-2026** (aparece como Estable). La brecha observada se analiza por separado: incorporarla solo desde 2024 cambiaría el número de componentes del índice a mitad de la muestra e invalidaría la comparación histórica de estados.
 
 **Robustez a los umbrales:**
 
@@ -136,7 +140,7 @@ Reservas simuladas con movimiento browniano geométrico: μ = 2.43% y σ = 9.08%
 
 ![Monte Carlo](figures/fig_montecarlo_rib.png)
 
-**Ejemplo del simulador cambiario:** USD 10,000 a 90 días. Hoy: Bs 118,900. Rango 5-50-95%: Bs 112,119 / 118,789 / 125,918. Parámetros: σ diaria 0.37% estimada con solo 15 variaciones del oficial desde ago-2026 y deriva 0. **Muestra muy pequeña: el rango es indicativo.**
+**Ejemplo del simulador cambiario:** USD 10,000 a 90 días. Hoy: Bs 116,700. Rango 5-50-95%: Bs 87,784 / 114,972 / 150,921. Parámetros: σ diaria 1.73% estimada con 104 variaciones del TCO desde ago-2026 y deriva 0. **Rango indicativo, sensible al régimen y a las colas pesadas.**
 
 Detección de anomalías: residuos estandarizados de SARIMA con |z| > 2,5 (se descartan los primeros 24 meses por el arranque del filtro).
 
@@ -150,17 +154,21 @@ Detección de anomalías: residuos estandarizados de SARIMA con |z| > 2,5 (se de
 | Referencial (dic-2025→may-2026) | 6 | 6.255 | 7.996 |
 | Flexible (jun-2026→) | 5 | 3.538 | 10.437 |
 
-La variación mensual del tipo de cambio de referencia es nula bajo el régimen fijo (2011-2025) y pasa a ser grande bajo el referencial y el flexible, un cambio de régimen evidente (incluye el salto único jun→jul-2026, de 9,76 a 12,15). La comparación formal de volatilidad del paralelo (prueba de Levene) requiere historial P2P.
+La variación mensual del tipo de cambio de referencia es nula bajo el régimen fijo (2011-2025) y pasa a ser grande bajo el referencial y el flexible; esta descripción incluye el salto de transición jun→jul-2026. Para H3 formal se comparan retornos diarios de la misma mediana P2P entre 4-may y 3-sep-2026, antes del cambio de metodología del proveedor del 4-sep. Se reporta una sensibilidad que excluye la primera semana flexible.
 
 ## 5. Estado de las hipótesis
 
 | # | Hipótesis | Resultado |
 |---|---|---|
-| H1 | Brecha estacionaria con vida media corta | Pendiente: faltan datos P2P |
+| H1 | Brecha estacionaria con vida media <30 días | n=138; φ=0.842; vida media=4.0 días; ADF p=8.86e-05. Compatible con estacionariedad y vida media <30 días. |
 | H2 | Estados persistentes (Markov) | p_Estable→Estable=0.93; independencia rechazada; orden 1 rechazado (p=0.000) |
-| H3 | Volatilidad cambia con el régimen | Descriptivo: sí (ver §4). Formal: pendiente; se necesitan al menos 10 retornos antes y después del 29-jun-2026 |
+| H3 | Volatilidad cambia con el régimen | n=56/67; σ=0.47%/1.12%; razón=2.39; Levene p=3.82e-05. Cambio de volatilidad compatible con los datos. |
 | H4 | SARIMA supera al ingenuo | Mixto (ver validación) |
-| H5 | El paralelo se adelanta al oficial | Pendiente: se necesitan al menos 90 retornos diarios comunes |
+| H5 | El paralelo se adelanta al oficial | n=97 días hábiles; correlación máxima en k=1: 0.658; Granger lag 1 paralelo→oficial p=9.21e-10, oficial→paralelo p=0.293. Compatible con adelanto del paralelo; no prueba causalidad. |
+
+**Sensibilidad H3:** al excluir los primeros siete días del régimen flexible, razón de desviaciones=2.52, Levene p=1.71e-05 (n=56/60).
+
+**Cautela H5:** el TCO se publica con rezago respecto a las transacciones bancarias y el paralelo se actualiza continuamente. Una correlación con k=1 puede reflejar el calendario de publicación. Granger mide capacidad predictiva condicional, no causalidad; los rezagos 2–5 son exploratorios.
 
 ## 6. Limitaciones
 

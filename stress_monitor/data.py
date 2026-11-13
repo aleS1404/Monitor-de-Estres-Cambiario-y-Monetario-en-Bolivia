@@ -10,6 +10,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 PROCESSED = ROOT / "data" / "processed"
 P2P_DB = ROOT / "data" / "p2p" / "p2p.sqlite"
+EXTERNAL_DIR = ROOT / "data" / "external"
 
 # Fechas de régimen cambiario (verificadas en el Excel del BCB y la prensa)
 FECHA_REFERENCIAL = pd.Timestamp("2025-12-01")   # aparece el "valor referencial" de venta
@@ -79,6 +80,29 @@ def official_daily(m: pd.DataFrame, d: pd.DataFrame | None = None,
     return pts.reindex(idx).ffill().rename("oficial")
 
 
+def load_external_parallel(path: Path | None = None) -> pd.DataFrame:
+    """Mediana P2P diaria observada por paralelo.bo; separada del recolector propio."""
+    p = Path(path or EXTERNAL_DIR / "paralelo_bo_historical.csv")
+    if not p.exists():
+        return pd.DataFrame(columns=["paralelo"])
+    df = pd.read_csv(p, comment="#", parse_dates=["date"])
+    if df.date.duplicated().any() or df.date.isna().any():
+        raise ValueError("Fechas inválidas o duplicadas en el paralelo externo")
+    return df.set_index("date")[["median_bob_per_usd"]].rename(columns={"median_bob_per_usd": "paralelo"}).sort_index()
+
+
+def load_bcb_tco(path: Path | None = None) -> pd.Series:
+    """TCO diario desde el régimen flexible. El tramo previo del CSV es compra fija (6,86)."""
+    p = Path(path or EXTERNAL_DIR / "bcb_tco_daily.csv")
+    if not p.exists():
+        return pd.Series(dtype=float, name="oficial")
+    df = pd.read_csv(p, sep=";", encoding="utf-8-sig", parse_dates=["Fecha"])
+    if df.Fecha.duplicated().any() or df.Fecha.isna().any():
+        raise ValueError("Fechas inválidas o duplicadas en el TCO del BCB")
+    s = df.set_index("Fecha")["Valor"].sort_index()
+    return s[s.index >= FECHA_FLEXIBLE].rename("oficial")
+
+
 P2P_CSV = ROOT / "data" / "p2p" / "quotes.csv"
 
 
@@ -111,19 +135,33 @@ def load_p2p(db_path: Path | None = None, csv_path: Path | None = None) -> tuple
 
 
 def build_gap(m: pd.DataFrame, d: pd.DataFrame | None, collector: pd.DataFrame,
-              bcb_pdf: pd.DataFrame) -> pd.DataFrame:
-    """Brecha diaria = USDT venta / oficial de referencia − 1 (en %).
-    Prioridad de fuente para el USDT: recolector propio > PDF del BCB."""
+              bcb_pdf: pd.DataFrame, *, external: pd.DataFrame | None = None,
+              official_tco: pd.Series | None = None) -> pd.DataFrame:
+    """Brecha diaria con una única definición del paralelo por análisis.
+
+    Si hay historial externo, se usa su mediana P2P completa sin mezclarla con
+    la venta Binance del recolector ni con el promedio ponderado del PDF BCB.
+    """
     par = pd.Series(dtype=float, name="paralelo")
-    if len(bcb_pdf):
-        par = bcb_pdf["usdt_venta"].rename("paralelo")
-    if len(collector) and "p2p_venta" in collector:
-        par = pd.concat([par, collector["p2p_venta"].dropna()]).groupby(level=0).last().rename("paralelo")
+    source = "sin datos"
+    if external is not None and len(external):
+        par = external["paralelo"].dropna().rename("paralelo")
+        source = "paralelo.bo (mediana P2P)"
+    else:
+        if len(bcb_pdf):
+            par = bcb_pdf["usdt_venta"].rename("paralelo")
+            source = "BCB PDF (USDT venta)"
+        if len(collector) and "p2p_venta" in collector:
+            par = pd.concat([par, collector["p2p_venta"].dropna()]).groupby(level=0).last().rename("paralelo")
+            source = "BCB PDF / DolarApi Binance (USDT venta)" if len(bcb_pdf) else "DolarApi Binance (USDT venta)"
     if par.empty:
-        return pd.DataFrame(columns=["paralelo", "oficial", "brecha_pct"])
+        return pd.DataFrame(columns=["paralelo", "oficial", "brecha_pct", "fuente_p2p"])
     of = official_daily(m, d, collector if len(collector) else None)
+    if official_tco is not None and len(official_tco):
+        of = pd.concat([of, official_tco[official_tco.index >= FECHA_FLEXIBLE]]).groupby(level=0).last().sort_index()
     df = pd.concat([par, of], axis=1, sort=True).dropna()
     df["brecha_pct"] = (df["paralelo"] / df["oficial"] - 1) * 100
+    df["fuente_p2p"] = source
     return df
 
 
@@ -134,6 +172,9 @@ def official_points(m: pd.DataFrame, d: pd.DataFrame | None = None, since: str =
     if d is not None and len(d) and "tc_oficial" in d:
         extra = d.dropna(subset=["tc_oficial"]).set_index("date")["tc_oficial"]
         pts = pd.concat([pts, extra]).groupby(level=0).last()
+    tco = load_bcb_tco()
+    if len(tco):
+        pts = pd.concat([pts, tco]).groupby(level=0).last()
     pts = pts.sort_index()
     return pts[pts.index >= since].rename("oficial")
 
