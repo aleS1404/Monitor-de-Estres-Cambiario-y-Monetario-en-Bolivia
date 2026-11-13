@@ -1,0 +1,174 @@
+row,section,label
+7,Información monetaria (saldos en millones de Bs),Balance del Banco Central de Bolivia
+8,Información monetaria (saldos en millones de Bs),Base monetaria
+9,Información monetaria (saldos en millones de Bs),Billetes y monedas en poder del público
+10,Información monetaria (saldos en millones de Bs),Reservas bancarias
+11,Información monetaria (saldos en millones de Bs),Moneda nacional (MN)
+12,Información monetaria (saldos en millones de Bs),Unidad de fomento de vivienda (UFV)
+13,Información monetaria (saldos en millones de Bs),Moneda extranjera (ME)
+14,Información monetaria (saldos en millones de Bs),Moneda nacional con mantenimiento de valor (MVDOL)
+15,Información monetaria (saldos en millones de Bs),Pro Memoria: ME + MVDOL (en millones de USD)
+16,Información monetaria (saldos en millones de Bs),Base monetaria en moneda nacional (MN + UFV)
+17,Información monetaria (saldos en millones de Bs),Crédito interno neto del BCB (incluye obligaciones de mediano y largo plazo)
+18,Información monetaria (saldos en millones de Bs),Moneda nacional
+19,Información monetaria (saldos en millones de Bs),Moneda extranjera
+20,Información monetaria (saldos en millones de Bs),Pro Memoria: Moneda extranjera (en millones de USD)
+21,Información monetaria (saldos en millones de Bs),Crédito neto del BCB al Sector Público No financiero
+22,Información monetaria (saldos en millones de Bs),Créditos del BCB al SPNF
+23,Información monetaria (saldos en millones de Bs),Moneda nacional
+24,Información monetaria (saldos en millones de Bs),Moneda extranjera
+25,Información monetaria (saldos en millones de Bs),Pro Memoria: Moneda extranjera (en millones de USD)
+26,Información monetaria (saldos en millones de Bs),Depósitos del SPNF en el BCB
+27,Información monetaria (saldos en millones de Bs),Moneda nacional
+28,Información monetaria (saldos en millones de Bs),Moneda extranjera
+29,Información monetaria (saldos en millones de Bs),Pro Memoria: Moneda extranjera (en millones de USD)
+30,Información monetaria (saldos en millones de Bs),Crédito a otros sectores (financiero y privado)
+31,Información monetaria (saldos en millones de Bs),Moneda nacional
+32,Información monetaria (saldos en millones de Bs),Moneda extranjera
+33,Información monetaria (saldos en millones de Bs),Pro Memoria: Moneda extranjera (en millones de USD)
+34,Información monetaria (saldos en millones de Bs),Emisión monetaria
+35,Información monetaria (saldos en millones de Bs),Agregados Monetarios 1
+36,Información monetaria (saldos en millones de Bs),M’1
+37,Información monetaria (saldos en millones de Bs),Moneda nacional
+38,Información monetaria (saldos en millones de Bs),Moneda extranjera
+39,Información monetaria (saldos en millones de Bs),Pro Memoria: Moneda extranjera (en millones de USD)
+40,Información monetaria (saldos en millones de Bs),M’2
+41,Información monetaria (saldos en millones de Bs),Moneda nacional
+42,Información monetaria (saldos en millones de Bs),Moneda extranjera
+43,Información monetaria (saldos en millones de Bs),Pro Memoria: Moneda extranjera (en millones de USD)
+44,Información monetaria (saldos en millones de Bs),M’3
+45,Información monetaria (saldos en millones de Bs),Moneda nacional
+46,Información monetaria (saldos en millones de Bs),Moneda extranjera
+47,Información monetaria (saldos en millones de Bs),Pro Memoria: Moneda extranjera (en millones de USD)
+48,Información monetaria (saldos en millones de Bs),Participación de MN y UFV en Agregados Monetarios (%)
+49,Información monetaria (saldos en millones de Bs),M1 / M’1
+50,Información monetaria (saldos en millones de Bs),M2 / M’2
+51,Información monetaria (saldos en millones de Bs),M3 / M’3
+53,Operaciones con títulos públicos y financiamiento del BCB (saldos),Saldos netos de títulos (millones de USD)
+54,Operaciones con títulos públicos y financiamiento del BCB (saldos),a) Tesoro General de la Nación (millones de USD)
+55,Operaciones con títulos públicos y financiamiento del BCB (saldos),MN y UFV (millones de Bs) 2
+56,Operaciones con títulos públicos y financiamiento del BCB (saldos),ME y MVDOL (millones de USD) 2
+57,Operaciones con títulos públicos y financiamiento del BCB (saldos),b) Banco Central de Bolivia (millones de USD)
+58,Operaciones con títulos públicos y financiamiento del BCB (saldos),MN y UFV (millones de Bs) 3
+59,Operaciones con títulos públicos y financiamiento del BCB (saldos),Del cual venta directa (millones de Bs)
+60,Operaciones con títulos públicos y financiamiento del BCB (saldos),ME y MVDOL (millones de USD)4
+61,Operaciones con títulos públicos y financiamiento del BCB (saldos),Del cual venta directa (millones de USD)
+62,Operaciones con títulos públicos y financiamiento del BCB (saldos),Financiamiento de corto plazo al sistema financiero (millones de USD)
+63,Operaciones con títulos públicos y financiamiento del BCB (saldos),a) Créditos de Liquidez c/garantía del encaje legal en títulos (millones de USD)
+64,Operaciones con títulos públicos y financiamiento del BCB (saldos),MN y UFV (millones de Bs)
+65,Operaciones con títulos públicos y financiamiento del BCB (saldos),ME y MVDOL (millones de USD)
+66,Operaciones con títulos públicos y financiamiento del BCB (saldos),b) Reportos (millones de USD)
+67,Operaciones con títulos públicos y financiamiento del BCB (saldos),MN y UFV (millones de Bs)
+68,Operaciones con títulos públicos y financiamiento del BCB (saldos),ME y MVDOL (millones de USD)
+70,Precios y tasas de interés,Índice de Precios al Consumidor (2016=100)
+71,Precios y tasas de interés,Variación mensual inflación total
+72,Precios y tasas de interés,Variación acumulada en el año inflación total
+73,Precios y tasas de interés,Variación a doce meses inflación total
+74,Precios y tasas de interés,Índice Núcleo (2016=100)
+75,Precios y tasas de interés,Variación mensual inflación núcleo
+76,Precios y tasas de interés,Variación acumulada en el año inflación núcleo
+77,Precios y tasas de interés,Variación a doce meses inflación núcleo
+78,Precios y tasas de interés,Índice Subyacente (2016=100)
+79,Precios y tasas de interés,Variación mensual inflación subyacente
+80,Precios y tasas de interés,Variación acumulada en el año inflación subyacente
+81,Precios y tasas de interés,Variación a doce meses inflación subyacente
+82,Precios y tasas de interés,Tasas premio de reporto del BCB
+83,Precios y tasas de interés,Moneda nacional (%)
+84,Precios y tasas de interés,Moneda extranjera (%)
+86,Operaciones del sistema financiero (saldos en millones de USD),Ahorro en el Sistema Financiero5
+87,Operaciones del sistema financiero (saldos en millones de USD),Moneda nacional
+88,Operaciones del sistema financiero (saldos en millones de USD),Pro Memoria: Moneda nacional (en millones de Bs)
+89,Operaciones del sistema financiero (saldos en millones de USD),Moneda extranjera
+90,Operaciones del sistema financiero (saldos en millones de USD),Bolivianización (%) 6
+91,Operaciones del sistema financiero (saldos en millones de USD),Depósitos en entidades de intermediación financiera
+92,Operaciones del sistema financiero (saldos en millones de USD),Moneda nacional
+93,Operaciones del sistema financiero (saldos en millones de USD),Pro Memoria: Moneda nacional (en millones de Bs)
+94,Operaciones del sistema financiero (saldos en millones de USD),Moneda extranjera
+95,Operaciones del sistema financiero (saldos en millones de USD),Bolivianización (%)
+96,Operaciones del sistema financiero (saldos en millones de USD),A la vista
+97,Operaciones del sistema financiero (saldos en millones de USD),Moneda nacional
+98,Operaciones del sistema financiero (saldos en millones de USD),Pro Memoria: Moneda nacional (en millones de Bs)
+99,Operaciones del sistema financiero (saldos en millones de USD),Moneda extranjera
+100,Operaciones del sistema financiero (saldos en millones de USD),Bolivianización (%)
+101,Operaciones del sistema financiero (saldos en millones de USD),Caja de ahorro
+102,Operaciones del sistema financiero (saldos en millones de USD),Moneda nacional
+103,Operaciones del sistema financiero (saldos en millones de USD),Pro Memoria: Moneda nacional (en millones de Bs)
+104,Operaciones del sistema financiero (saldos en millones de USD),Moneda extranjera
+105,Operaciones del sistema financiero (saldos en millones de USD),Bolivianización (%)
+106,Operaciones del sistema financiero (saldos en millones de USD),Plazo
+107,Operaciones del sistema financiero (saldos en millones de USD),Moneda nacional
+108,Operaciones del sistema financiero (saldos en millones de USD),Pro Memoria: Moneda nacional (en millones de Bs)
+109,Operaciones del sistema financiero (saldos en millones de USD),Moneda extranjera
+110,Operaciones del sistema financiero (saldos en millones de USD),Bolivianización (%)
+111,Operaciones del sistema financiero (saldos en millones de USD),Otros
+112,Operaciones del sistema financiero (saldos en millones de USD),Moneda nacional
+113,Operaciones del sistema financiero (saldos en millones de USD),Pro Memoria: Moneda nacional (en millones de Bs)
+114,Operaciones del sistema financiero (saldos en millones de USD),Moneda extranjera
+115,Operaciones del sistema financiero (saldos en millones de USD),Bolivianización (%)
+116,Operaciones del sistema financiero (saldos en millones de USD),Encaje constituido por el sistema financiero (en millones de USD)
+117,Operaciones del sistema financiero (saldos en millones de USD),"Efectivo MN, UFV"
+118,Operaciones del sistema financiero (saldos en millones de USD),Pro Memoria: Moneda nacional (en millones de Bs)
+119,Operaciones del sistema financiero (saldos en millones de USD),"Títulos MN, UFV"
+120,Operaciones del sistema financiero (saldos en millones de USD),Pro Memoria: Moneda nacional (en millones de Bs)
+121,Operaciones del sistema financiero (saldos en millones de USD),"Efectivo ME, MVDOL"
+122,Operaciones del sistema financiero (saldos en millones de USD),"Títulos ME, MVDOL"
+123,Operaciones del sistema financiero (saldos en millones de USD),"Excedente de Encaje en el BCB del sistema financiero (en efectivo, en millones de USD)"
+124,Operaciones del sistema financiero (saldos en millones de USD),"MN, UFV"
+125,Operaciones del sistema financiero (saldos en millones de USD),Pro Memoria: Moneda nacional (en millones de Bs)
+126,Operaciones del sistema financiero (saldos en millones de USD),"ME, MVDOL"
+127,Operaciones del sistema financiero (saldos en millones de USD),Crédito del sistema financiero al sector privado7 (en millones de USD)
+128,Operaciones del sistema financiero (saldos en millones de USD),Moneda nacional
+129,Operaciones del sistema financiero (saldos en millones de USD),Pro Memoria: Moneda nacional (en millones de Bs)
+130,Operaciones del sistema financiero (saldos en millones de USD),Moneda extranjera
+131,Operaciones del sistema financiero (saldos en millones de USD),Bolivianización (%)
+132,Operaciones del sistema financiero (saldos en millones de USD),Crédito a Empresas públicas
+133,Operaciones del sistema financiero (saldos en millones de USD),Moneda nacional
+134,Operaciones del sistema financiero (saldos en millones de USD),Pro Memoria: Moneda nacional (en millones de Bs)
+135,Operaciones del sistema financiero (saldos en millones de USD),Moneda extranjera
+136,Operaciones del sistema financiero (saldos en millones de USD),Crédito a Gobernaciones y Municipios
+137,Operaciones del sistema financiero (saldos en millones de USD),Moneda nacional
+138,Operaciones del sistema financiero (saldos en millones de USD),Pro Memoria: Moneda nacional (en millones de Bs)
+139,Operaciones del sistema financiero (saldos en millones de USD),Moneda extranjera
+141,Operaciones con el exterior (saldos y flujos en millones de USD),Reservas Internacionales Brutas8 (I + II + III + IV)
+142,Operaciones con el exterior (saldos y flujos en millones de USD),Oro en toneladas (a + b)
+143,Operaciones con el exterior (saldos y flujos en millones de USD),a. Requerido según Ley N°1503
+144,Operaciones con el exterior (saldos y flujos en millones de USD),d/c En portafolio de inversión
+145,Operaciones con el exterior (saldos y flujos en millones de USD),b. Oro convertible en divisas
+146,Operaciones con el exterior (saldos y flujos en millones de USD),Reservas de Oro neto de Pasivos en toneladas (a + b - c)
+147,Operaciones con el exterior (saldos y flujos en millones de USD),c. Pasivos relacionados con operaciones con oro 9
+148,Operaciones con el exterior (saldos y flujos en millones de USD),I. Oro (d + e)
+149,Operaciones con el exterior (saldos y flujos en millones de USD),d. Requerido según Ley N°1503
+150,Operaciones con el exterior (saldos y flujos en millones de USD),d/c En portafolio de inversión
+151,Operaciones con el exterior (saldos y flujos en millones de USD),e. Oro convertible en divisas
+152,Operaciones con el exterior (saldos y flujos en millones de USD),Reservas de Oro neto de Pasivos (d + e - f)
+153,Operaciones con el exterior (saldos y flujos en millones de USD),f. Pasivos relacionados con operaciones con oro 10
+154,Operaciones con el exterior (saldos y flujos en millones de USD),II. Divisas
+155,Operaciones con el exterior (saldos y flujos en millones de USD),III. DEG
+156,Operaciones con el exterior (saldos y flujos en millones de USD),IV. Posición con el FMI
+157,Operaciones con el exterior (saldos y flujos en millones de USD),g. Obligaciones de reservas
+158,Operaciones con el exterior (saldos y flujos en millones de USD),V. Reservas Internacionales Netas (I + II + III + IV - g)
+159,Operaciones con el exterior (saldos y flujos en millones de USD),d/c Recursos de Alta Liquidez (I.e + II) 11
+160,Operaciones con el exterior (saldos y flujos en millones de USD),VI. Reservas Internacionales Netas incluyendo obligaciones relativas al oro (V - f) 12
+161,Operaciones con el exterior (saldos y flujos en millones de USD),VII. Activos externos netos de entidades financieras de intermediación
+162,Operaciones con el exterior (saldos y flujos en millones de USD),d/c Fondo RAL en ME
+163,Operaciones con el exterior (saldos y flujos en millones de USD),VIII. Fondo para la Revolución Industrial Productiva (FINPRO)
+164,Operaciones con el exterior (saldos y flujos en millones de USD),IX. Fondos de Protección (FPA y FPAH en ME)13
+165,Operaciones con el exterior (saldos y flujos en millones de USD),X. Fondo Para la Inversión Exploración y Explotación de Hidrocarburos (FPIEEH)14
+166,Operaciones con el exterior (saldos y flujos en millones de USD),Total Activos Externos (V + VII + VIII + IX + X)
+167,Operaciones con el exterior (saldos y flujos en millones de USD),Adjudicación de dólares en el Bolsín - Sistema Financiero 15
+168,Operaciones con el exterior (saldos y flujos en millones de USD),Adjudicación de dólares en el Bolsín - Sector Privado 16
+169,Operaciones con el exterior (saldos y flujos en millones de USD),Adjudicación de dólares en Ventas Directas - Sistema Financiero
+170,Operaciones con el exterior (saldos y flujos en millones de USD),Adjudicación de dólares en Ventas Directas - Sector Privado
+171,Operaciones con el exterior (saldos y flujos en millones de USD),Compras de dólares al Sistema Financiero por el BCB
+172,Operaciones con el exterior (saldos y flujos en millones de USD),Transferencias del exterior al Sistema Financiero a través del BCB
+173,Operaciones con el exterior (saldos y flujos en millones de USD),Transferencias del Sistema Financiero al exterior a través del BCB
+174,Operaciones con el exterior (saldos y flujos en millones de USD),Transferencias al exterior a través del sistema financiero
+175,Operaciones con el exterior (saldos y flujos en millones de USD),Transferencias del exterior a través del sistema financiero
+177,Tipos de cambio y valor de la UFV,Tipo de cambio de venta en el Bolsín (Bs/USD)
+178,Tipos de cambio y valor de la UFV,Tipo de Cambio Oficial compra BCB (Bs/USD)
+179,Tipos de cambio y valor de la UFV,Tipo de Cambio Oficial (Bs/USD)
+180,Tipos de cambio y valor de la UFV,Valor referencial de venta del dólar estadounidense
+181,Tipos de cambio y valor de la UFV,Valor referencial de compra del dólar estadounidense
+182,Tipos de cambio y valor de la UFV,Índice de tipo de cambio real (base diciembre 2022=100)
+183,Tipos de cambio y valor de la UFV,UFV (Bs/UFV día hábil )
+184,Tipos de cambio y valor de la UFV,UFV (Bs/UFV último día del mes)
