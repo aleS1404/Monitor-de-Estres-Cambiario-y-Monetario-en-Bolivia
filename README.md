@@ -31,7 +31,7 @@ Los Excel descargados en `data/raw/` no se versionan; el repositorio sí incluye
 | `stress_monitor/` | `stationarity` (cap. 1-2, 5) · `markov` (cap. 3) · `forecasting` (cap. 4, 6) · `gap` (cap. 5) · `simulation` (cap. 7) · `report` |
 | `app/streamlit_app.py` | Tablero de 7 pantallas: semáforo, brecha, reservas y depósitos, inflación, simulador, alertas, metodología |
 | `notebooks/` | 6 notebooks por capítulo, **ya ejecutados** (se regeneran con `python notebooks/build_notebooks.py`) |
-| `reports/` | `INFORME.md` generado con cifras reales, `results.json`, `figures/` |
+| `reports/` | `INFORME.md` generado con cifras reales, [`INFORME_ACADEMICO.md`](reports/INFORME_ACADEMICO.md) con marco teórico y explicación integral, `results.json`, `figures/` |
 | `docs/GUION_PRESENTACION.md` | Guion de la presentación y preguntas probables |
 | `.github/workflows/` | Actualización semanal de datos y recolector P2P horario (opcional) |
 
