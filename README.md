@@ -16,12 +16,15 @@ python -m bcb_pipeline download --latest    # obtiene el Excel más reciente del
 python -m bcb_pipeline build                # regenera data/processed desde data/raw
 python -m bcb_pipeline fetch-history        # P2P histórico y TCO diario con manifiesto
 python -m stress_monitor.report              # genera reports/INFORME.md + figuras (~1-2 min)
+python reports/build_academic_word.py         # maqueta el informe académico en Word con las figuras existentes
 streamlit run app/streamlit_app.py           # tablero
 python -m pytest -q                          # suite completa
 ```
 Con `make`: `make install | data | report | notebooks | app | test`.
 
 Los Excel descargados en `data/raw/` no se versionan; el repositorio sí incluye los datos procesados y el informe generado. Las dos series diarias originales y su procedencia están en [`data/external/`](data/external/README.md).
+
+El Word académico toma el texto de `reports/INFORME_ACADEMICO.md` e incorpora las figuras de `reports/figures/`. Las cifras del documento corresponden al corte indicado en su portada; para actualizarlas, primero se regeneran los análisis y después se revisa el texto académico antes de volver a exportar.
 
 ## Qué incluye
 
@@ -31,7 +34,7 @@ Los Excel descargados en `data/raw/` no se versionan; el repositorio sí incluye
 | `stress_monitor/` | `stationarity` (cap. 1-2, 5) · `markov` (cap. 3) · `forecasting` (cap. 4, 6) · `gap` (cap. 5) · `simulation` (cap. 7) · `report` |
 | `app/streamlit_app.py` | Tablero de 7 pantallas: semáforo, brecha, reservas y depósitos, inflación, simulador, alertas, metodología |
 | `notebooks/` | 6 notebooks por capítulo, **ya ejecutados** (se regeneran con `python notebooks/build_notebooks.py`) |
-| `reports/` | `INFORME.md` generado con cifras reales, [`INFORME_ACADEMICO.md`](reports/INFORME_ACADEMICO.md) con marco teórico y explicación integral, `results.json`, `figures/` |
+| `reports/` | `INFORME.md` generado con cifras reales, [`INFORME_ACADEMICO.md`](reports/INFORME_ACADEMICO.md) con marco teórico y explicación integral, [`INFORME_ACADEMICO.docx`](reports/INFORME_ACADEMICO.docx) listo para Word, `results.json`, `figures/` |
 | `docs/GUION_PRESENTACION.md` | Guion de la presentación y preguntas probables |
 | `.github/workflows/` | Actualización semanal de datos y recolector P2P horario (opcional) |
 
