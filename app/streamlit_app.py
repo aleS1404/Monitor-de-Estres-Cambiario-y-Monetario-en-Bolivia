@@ -16,10 +16,10 @@ sys.path.insert(0, str(ROOT))
 
 from stress_monitor import data, demo, forecasting as fc, gap as gp, markov as mk  # noqa: E402
 from stress_monitor import simulation as sim, stationarity as stat  # noqa: E402
-from app.editorial import VARIABLES, GOLD, MOSS, PINE, apply_theme, chart, masthead, note  # noqa: E402
+from app.editorial import VARIABLES, GOLD, MOSS, PINE, apply_theme, chart, example, masthead, note  # noqa: E402
 
 st.set_page_config(page_title="Monitor de estrés — Bolivia", page_icon="🇧🇴", layout="wide")
-COLORS = {0: "#2e6b4b", 1: "#b78b3e", 2: "#a34b38"}
+COLORS = {0: "#16845e", 1: "#dfa125", 2: "#c75039"}
 DISCLAIMER = ("⚠️ **Aviso:** esta herramienta es académica. Informa con probabilidades y escenarios; "
               "**no es asesoría financiera ni una predicción**.")
 PAGES = ["Semáforo del sistema", "Brecha cambiaria", "Reservas y depósitos", "Inflación",
@@ -66,7 +66,7 @@ def shade_states(fig, states: pd.Series):
     start, cur = states.index[0], int(states.iloc[0])
     for i in range(1, len(states)):
         if int(states.iloc[i]) != cur or i == len(states) - 1:
-            fig.add_vrect(x0=start, x1=states.index[i], fillcolor=COLORS[cur], opacity=0.18, line_width=0)
+            fig.add_vrect(x0=start, x1=states.index[i], fillcolor=COLORS[cur], opacity=0.26, line_width=0)
             start, cur = states.index[i], int(states.iloc[i])
 
 
@@ -74,6 +74,7 @@ def shade_states(fig, states: pd.Series):
 def page_semaforo(m, gap_real):
     st.header("Semáforo del sistema")
     note("¿Qué es el estrés monetario?", "Es una medida descriptiva de presión, no una calificación oficial. Combina la caída anual de reservas con el cambio de la proporción de depósitos en bolivianos calculado a un mismo tipo de cambio. Así evita confundir una conversión contable con una salida de depósitos.")
+    example("En palabras simples · caída anual de reservas", "Comparamos las reservas internacionales brutas (RIB) de un mes con las del mismo mes del año anterior. Si pasan de 4.000 a 3.600 millones de USD, bajaron 400 millones, cerca del 10 %. En el índice, una caída suma presión; por sí sola no revela por qué bajaron.")
     with st.expander("Umbrales de los estados (decisión del analista)"):
         c1, c2 = st.columns(2)
         q1 = c1.slider("Percentil de inicio de **Tensión**", 0.40, 0.80, 0.60, 0.01)
@@ -94,15 +95,22 @@ def page_semaforo(m, gap_real):
     b.caption(f"Umbral tensión {t1:.2f} · crisis {t2:.2f}")
     comp = ci.drop(columns="indice").iloc[-1]
     c.markdown("**Qué lo explica** (puntos z; + = más estrés)")
-    c.dataframe(comp.rename("z").round(2).to_frame(), width="stretch")
+    componentes = comp.rename(index={"reservas": "Caída anual de reservas (RIB)",
+                                   "bolivianizacion": "Cambio neutral de bolivianización (depósitos MN/ME)"})
+    c.dataframe(componentes.rename("z").round(2).to_frame(), width="stretch")
     st.caption("Los estados son **relativos a la historia 1989-hoy** (percentiles del índice): «Crisis» significa que el índice "
                "está en el tramo más alto de su historia, no es un diagnóstico de crisis. "
                "La brecha se analiza por separado para conservar los mismos componentes en toda la serie.")
 
     fig = go.Figure(); shade_states(fig, states)
-    line(fig, ci.index, ci["indice"], "Índice", line=dict(color=PINE, width=2))
-    fig.update_layout(height=330, margin=dict(l=10, r=10, t=30, b=10), title="Índice de estrés y estados (verde/ámbar/rojo)")
-    note("Cómo leer la serie", "Cada punto es un mes. El fondo coloreado muestra el estado que resulta de comparar el índice con los percentiles elegidos. El modelo usa dos señales en toda la historia; la brecha P2P se estudia aparte porque no existe para todos los años.")
+    line(fig, ci.index, ci["indice"], "Índice mensual", line=dict(color="#0c644a", width=3.6))
+    fig.add_trace(go.Scatter(x=[ci.index[-1]], y=[ci["indice"].iloc[-1]], name="Último mes",
+                             mode="markers", marker=dict(size=14, color="#eab447", line=dict(color=PINE, width=2))))
+    fig.add_hline(y=t1, line_color=COLORS[1], line_width=2, line_dash="dash", annotation_text="Inicio tensión")
+    fig.add_hline(y=t2, line_color=COLORS[2], line_width=2, line_dash="dash", annotation_text="Inicio crisis")
+    fig.update_layout(height=390, margin=dict(l=10, r=10, t=45, b=10), title="Índice de estrés y estados (verde/ámbar/rojo)",
+                      yaxis_title="Índice estandarizado")
+    note("Cómo leer la serie", "La línea verde intensa es el índice mensual y el punto dorado marca el dato más reciente. El fondo cambia de color según el estado; las líneas punteadas muestran los umbrales ajustables. El índice usa dos señales en toda la historia. P2P significa operaciones entre personas y su brecha se estudia aparte porque no existe para todos los años.")
     chart(st, fig)
 
     c1, c2 = st.columns(2)
@@ -121,15 +129,15 @@ def page_semaforo(m, gap_real):
     chart(c2, hm)
 
     st.markdown("#### Qué significan las probabilidades")
-    st.write("**Largo plazo π** es la proporción teórica de meses en cada estado si la matriz permaneciera igual durante mucho tiempo. **Permanencia media** estima cuántos meses seguidos duraría un estado según esa misma matriz.")
-    tbl = pd.DataFrame({"Estado": mk.ESTADOS, "Largo plazo π": fit.stationary,
+    st.write("La letra **π (pi)** de la tabla se llama *distribución estacionaria*: es la proporción teórica de meses en cada estado si las probabilidades de transición no cambiaran durante mucho tiempo. **Permanencia media** estima cuántos meses seguidos duraría un estado. Son resultados del modelo de Markov, no porcentajes garantizados del futuro.")
+    tbl = pd.DataFrame({"Estado": mk.ESTADOS, "Largo plazo π (pi)": fit.stationary,
                         "Permanencia media (meses)": fit.sojourn})
-    st.dataframe(tbl.style.format({"Largo plazo π": "{:.1%}", "Permanencia media (meses)": "{:.1f}"}), width="stretch", hide_index=True)
+    st.dataframe(tbl.style.format({"Largo plazo π (pi)": "{:.1%}", "Permanencia media (meses)": "{:.1f}"}), width="stretch", hide_index=True)
     ind, o2 = mk.test_independence(fit.counts), mk.test_second_order(states)
     st.caption(f"Propiedad de Markov: independencia χ² p={ind['p_valor']:.2g}; orden 1 vs 2 (LR) p={o2['p_valor']:.2g}. "
                "Con p<0,05 en el segundo contraste la cadena de primer orden es una aproximación.")
     st.markdown("**Validación con episodios conocidos**")
-    st.write("Comparamos los estados calculados con períodos históricos definidos antes de mirar la tabla. Cada fila indica qué porcentaje de meses de ese episodio cayó en cada estado.")
+    st.write("Comparamos los estados calculados con períodos históricos definidos antes de mirar la tabla. **Bonanza 2006–2013** significa aquí una etapa con mayor entrada de divisas y acumulación de reservas, que sirve como referencia para ver si el índice marca menos tensión. No es una etiqueta estadística creada por Markov. Cada fila indica qué porcentaje de meses del episodio cayó en cada estado.")
     st.dataframe(mk.episode_table(states).style.format({k: "{:.0%}" for k in mk.ESTADOS}), width="stretch", hide_index=True)
     st.markdown("**Robustez a los umbrales**")
     st.write("Esta tabla repite la clasificación con otros cortes. Si el diagnóstico cambia mucho, la lectura del semáforo depende de una elección del analista.")
@@ -140,6 +148,7 @@ def page_semaforo(m, gap_real):
 def page_brecha(m, d, gap_df, is_demo):
     st.header("Brecha cambiaria")
     note("¿Qué es la brecha cambiaria?", "Es la diferencia porcentual entre el precio P2P de referencia y el tipo oficial o referencial comparable: 100 × (P2P / oficial − 1). Una brecha positiva indica que el precio anunciado en P2P está por encima de la referencia del BCB; no mide por sí sola la cantidad de dólares negociados.")
+    example("Ejemplo para explicar la brecha", "Si la referencia oficial fuese Bs 10 por dólar y la mediana P2P fuese Bs 12, la brecha sería 20 %. P2P significa <em>peer to peer</em>, intercambio entre usuarios a través de una plataforma. Aquí la serie refleja anuncios vinculados a USDT, un activo digital, y no equivale al precio de cada billete de dólar vendido en Bolivia.")
     st.markdown("#### Tres etapas del tipo de cambio")
     st.write("El gráfico separa la venta fija del Bolsín, el valor referencial publicado entre diciembre de 2025 y mayo de 2026 y el oficial flexible desde junio de 2026. Cada línea procede del Excel semanal del BCB.")
     t = m[["tc_fijo_bolsin", "tc_referencial_venta", "tc_oficial"]]["2022":]
@@ -161,14 +170,14 @@ def page_brecha(m, d, gap_df, is_demo):
         st.caption(f"Fuente del paralelo: **{gap_df['fuente_p2p'].iloc[0]}**; "
                    "oficial diario: BCB (TCO) desde 29-jun-2026. La mediana P2P es un precio anunciado, no una transacción ejecutada.")
     st.markdown("#### Precio observado: P2P y oficial")
-    st.write("La línea P2P es la mediana histórica de anuncios de paralelo.bo; la oficial combina la referencia mensual y el TCO diario del BCB desde el régimen flexible. Se muestran en Bs por USD de referencia. El PDF de activos virtuales y el recolector DolarApi no se empalman con esta mediana.")
+    st.write("La línea P2P es la mediana histórica de anuncios de paralelo.bo: un precio central entre varias ofertas, no una operación ejecutada. La oficial combina la referencia mensual y el TCO diario del BCB desde el régimen flexible. Se muestran en Bs por USD de referencia. El PDF de activos virtuales y el recolector DolarApi no se empalman con esta mediana.")
     fig = go.Figure()
     line(fig, gap_df.index, gap_df["oficial"], "Oficial (referencia)"); line(fig, gap_df.index, gap_df["paralelo"], "Paralelo (USDT)")
     fig.update_layout(height=300, title="Oficial vs. paralelo (Bs/USD)", margin=dict(l=10, r=10, t=40, b=10))
     chart(st, fig)
 
     st.markdown("#### H1 · ¿Cuánto tarda en disiparse una brecha?")
-    note("Modelo AR(1)", "Relaciona la brecha de hoy con la de ayer. El coeficiente φ mide persistencia: cerca de 1 implica ajuste lento. Si 0 < φ < 1, la vida media estima cuántos días tarda una desviación en reducirse a la mitad. ADF comprueba si la serie puede tratarse como estacionaria en la muestra elegida.")
+    note("Modelo AR(1)", "Relaciona la brecha de hoy con la de ayer. El coeficiente φ (fi, persistencia) mide cuánto se arrastra el movimiento previo: cerca de 1 implica ajuste lento. Si 0 &lt; φ &lt; 1, la vida media estima cuántos días tarda una desviación en reducirse a la mitad. ADF es una prueba que revisa si la serie tiende a volver a un nivel estable en la muestra elegida.")
     scope = st.radio("Muestra para el AR(1)", ["Régimen flexible (desde 29-jun-2026)", "Toda la serie"], horizontal=True)
     g = gap_df["brecha_pct"]
     if scope.startswith("Régimen"):
@@ -179,11 +188,12 @@ def page_brecha(m, d, gap_df, is_demo):
     else:
         st.write("Estas cifras se recalculan con la muestra seleccionada. La **brecha media de largo plazo** es el nivel al que apunta el AR(1) bajo sus supuestos; no es una meta oficial.")
         c = st.columns(4)
-        c[0].metric("φ (persistencia diaria)", f"{r['phi']:.3f}", f"± {1.96 * r['se_phi']:.3f}", delta_color="off")
+        c[0].metric("φ (fi: persistencia diaria)", f"{r['phi']:.3f}")
+        c[0].caption(f"Margen aproximado: ± {1.96 * r['se_phi']:.3f}")
         c[1].metric("Vida media de la brecha", f"{r['vida_media']:.1f} días" if np.isfinite(r["vida_media"]) else "∞")
         c[2].metric("Brecha media de largo plazo", f"{r['media_larga']:.2f}%")
         c[3].metric("ADF (p)", f"{r['adf']['p_valor']:.3f}", "estacionaria" if r["adf"]["estacionaria_5%"] else "no estacionaria", delta_color="off")
-        note("Lectura de la banda", "La línea muestra la brecha observada. La franja es el intervalo de variación esperado bajo el AR(1) ajustado; los puntos fuera de ella son movimientos poco habituales para ese modelo, no una prueba automática de crisis.")
+        note("¿Qué es la brecha y banda esperada?", "La línea muestra cada brecha observada. La franja marca un rango habitual alrededor del promedio de largo plazo calculado por el AR(1), usando su variación estimada. No es un límite oficial ni un pronóstico preciso para cada día. Si la línea sale de la franja, el dato es poco habitual para ese modelo; no demuestra una crisis.")
         fg = go.Figure(); lo, hi = r["banda95"]
         fg.add_hrect(y0=lo, y1=hi, fillcolor=MOSS, opacity=0.16, line_width=0)
         line(fg, g.index, g, "Brecha %", line=dict(color=PINE))
@@ -221,7 +231,8 @@ def page_brecha(m, d, gap_df, is_demo):
 
 def page_reservas(m):
     st.header("Reservas y depósitos")
-    note("Qué se observa aquí", "Las reservas internacionales brutas (RIB) son activos externos del BCB. Los depósitos son saldos que el público mantiene en el sistema financiero; los depósitos en moneda extranjera están denominados en divisas. La base monetaria mide dinero emitido y reservas bancarias, y el IPC resume precios de consumo.")
+    note("Qué se observa aquí", "Las reservas internacionales brutas (RIB) son activos externos que mantiene el BCB, como divisas, oro monetario y otros activos de reserva. Se expresan en millones de USD para poder sumarlos y compararlos; no significan solo billetes de dólar guardados. Los depósitos son saldos que personas y empresas mantienen en bancos; los depósitos en moneda extranjera están denominados en divisas. La base monetaria incluye dinero emitido y reservas bancarias, y el IPC resume precios de consumo.")
+    example("Reservas en palabras simples", "Si el BCB informa RIB de 4.000 millones de USD, comunica el valor total de esos activos externos expresado en dólares. Un cambio en la cifra puede deberse a movimientos de activos, pagos o valoración; el tablero no afirma automáticamente que se vendieron dólares para defender el tipo de cambio.")
     opts = {"rib": "Reservas internacionales brutas", "depositos_me": "Depósitos en moneda extranjera",
             "base_monetaria": "Base monetaria", "ipc": "IPC"}
     c1, c2 = st.columns([2, 1])
@@ -254,7 +265,8 @@ def page_reservas(m):
 
     if col == "rib":
         st.subheader("Probabilidad de que las reservas crucen un umbral (Monte Carlo, GBM)")
-        note("Modelo de escenarios: Monte Carlo", "El movimiento browniano geométrico (GBM) genera miles de trayectorias posibles a partir de la variación histórica reciente de RIB. Se elige un nivel de reservas y un horizonte; el resultado es la fracción de trayectorias que termina debajo o cruza ese nivel. Supone una volatilidad estable y no incorpora decisiones de política futuras.")
+        note("Modelo de escenarios: Monte Carlo", "El movimiento browniano geométrico (GBM) genera miles de trayectorias posibles a partir de la variación histórica reciente de RIB. Un umbral es una línea de referencia elegida por el usuario para preguntar «¿qué proporción de trayectorias cae por debajo?». No es un mínimo oficial ni un pronóstico. El modelo supone volatilidad estable y no incorpora decisiones de política futuras.")
+        example("Ejemplo de umbral", "Si eliges 3.500 millones de USD y seis meses, el simulador cuenta cuántas trayectorias terminan por debajo de 3.500 y cuántas cruzan ese nivel en cualquier mes. Sirve para comparar escenarios cuando cambias plazo o volatilidad; el número 3.500 es una elección para el ejercicio.")
         s0 = float(m["rib"].iloc[-1])
         c1, c2, c3 = st.columns(3)
         th = c1.slider("Umbral (MM USD)", 1500, 5000, 3500, 100)
@@ -290,6 +302,7 @@ def page_reservas(m):
 def page_inflacion(m):
     st.header("Inflación")
     note("IPC e inflación", "El Índice de Precios al Consumidor (IPC) compara el costo de una canasta con el año base 2016=100. La inflación a 12 meses es el porcentaje que cambió ese índice frente al mismo mes del año anterior. Por eso un IPC que sigue subiendo puede coexistir con una inflación que baja: los precios aumentan, pero más despacio.")
+    example("Ejemplo cotidiano de inflación", "Si una canasta de alimentos, transporte y otros gastos costaba Bs 100 hace un año y hoy cuesta Bs 110, su precio subió 10 % en el ejemplo. La inflación oficial usa una canasta amplia y ponderada, no el precio de un solo producto ni exactamente esta canasta imaginaria.")
     st.write("**Lectura de los primeros gráficos.** A la izquierda está el nivel del IPC; a la derecha su variación interanual. Ambos proceden de las series mensuales del Excel del BCB.")
     s = m["ipc"][m.index >= "2005"]
     c1, c2 = st.columns(2)
@@ -315,7 +328,7 @@ def page_inflacion(m):
     full = pd.concat([m["ipc"], f])
     yoy = (full / full.shift(12) - 1).loc[f.index] * 100
     st.subheader("Pronóstico del IPC y su inflación a 12 meses implícita")
-    note("SARIMA frente a Holt–Winters", "SARIMA proyecta el IPC a partir de su dependencia temporal y de patrones de 12 meses. Calculamos la inflación implícita comparando cada IPC proyectado con el de un año antes. Holt–Winters es una alternativa de suavizamiento usada como referencia en la validación; aquí tuvo mejor error reciente para IPC.")
+    note("SARIMA frente a Holt–Winters", "SARIMA proyecta el IPC a partir de su dependencia temporal y de patrones de 12 meses. Calculamos la inflación implícita comparando cada IPC proyectado con el de un año antes. Holt–Winters suaviza los datos recientes y actualiza nivel, tendencia y patrón anual; sirve como comparación y aquí tuvo mejor error reciente para IPC.")
     st.dataframe(pd.DataFrame({"IPC pronosticado": f.round(2), "IC inf": r["forecast"]["inf"].round(2),
                                "IC sup": r["forecast"]["sup"].round(2), "Inflación 12m implícita %": yoy.round(1)}).head(12), width="stretch")
     st.caption("En la validación reciente, Holt-Winters pronosticó el IPC mejor que SARIMA y los intervalos fueron cortos (quiebre de régimen).")
@@ -325,7 +338,7 @@ def page_simulador(m, d, collector):
     st.header("Simulador de riesgo cambiario")
     st.error(DISCLAIMER)
     note("¿Para qué sirve?", "Permite imaginar cuánto podrían costar en bolivianos unos dólares comprados más adelante. El costo depende del monto, del tipo inicial, del plazo y de la variación diaria supuesta. Los números son escenarios matemáticos, no cotizaciones ni recomendaciones.")
-    st.write("**Modelo GBM y Monte Carlo.** El movimiento browniano geométrico genera 20.000 posibles tipos de cambio futuros usando una deriva diaria y una volatilidad. El usuario puede tomar la volatilidad del oficial BCB, de su recolector P2P si tiene suficientes días, o fijarla manualmente.")
+    st.write("**Modelo GBM y Monte Carlo.** El movimiento browniano geométrico genera 20.000 posibles tipos de cambio futuros. **Deriva** es el cambio promedio diario supuesto; **volatilidad** es el tamaño habitual de los movimientos. El usuario puede tomar esta última del oficial BCB, de su recolector P2P si tiene suficientes días, o fijarla manualmente.")
     c1, c2 = st.columns(2)
     usd = c1.number_input("Monto en dólares (USD)", 100.0, 10_000_000.0, 10_000.0, 500.0)
     days = c2.slider("Plazo (días)", 7, 365, 90)
@@ -367,6 +380,8 @@ def page_simulador(m, d, collector):
 def page_alertas(m):
     st.header("Alertas")
     note("Cómo se generan", "El tablero busca tres señales: datos mensuales atrasados, cambios de estado del índice y observaciones muy distintas de las esperadas por los modelos SARIMA. Son avisos para revisar la serie y su fuente, no diagnósticos automáticos de un problema económico.")
+    note("¿Qué hace SARIMA en las alertas?", "SARIMA aprende patrones de los meses anteriores de reservas (RIB), depósitos en moneda extranjera, base monetaria e IPC. Estima un valor esperado para cada mes y compara ese valor con el observado. La diferencia se llama residuo o error del modelo. Los primeros 24 meses de residuos del ajuste se excluyen para evitar efectos de inicialización.")
+    example("¿De dónde sale 2,5?", "El proyecto eligió 2,5 como regla de aviso; no es una cifra publicada por el BCB ni un número que SARIMA descubrió. A cada error se le resta el promedio de errores y se divide por su desviación típica. Si el resultado tiene magnitud mayor que 2,5, se marca como inusual. Por ejemplo, si un error típico fuese 4 unidades y el error de un mes fuese 11, el puntaje sería aproximadamente 2,75 y aparecería la alerta.")
     rows = []
     ult = m.index.max()
     lag = (pd.Timestamp.today().normalize() - ult).days
@@ -391,9 +406,23 @@ def page_alertas(m):
 def page_variables(m):
     st.header("Variables y fuentes")
     note("De dónde salen los números", "El Excel de Estadísticas Semanales del Banco Central de Bolivia contiene la historia mensual completa y observaciones semanales o diarias recientes. El proyecto extrae 18 variables mensuales seleccionadas; cada una conserva la fila del Excel, su fecha y su archivo de origen. Las series P2P y el TCO diario llegan por archivos externos separados.")
+    with st.expander("Diccionario rápido para empezar desde cero"):
+        terms = [
+            ("BCB", "Banco Central de Bolivia: publica las estadísticas oficiales usadas aquí."),
+            ("Bs/USD", "Bolivianos por un dólar de referencia; por ejemplo, Bs 10/USD significa diez bolivianos por dólar."),
+            ("MM USD / MM Bs", "Millones de dólares / millones de bolivianos; MM indica millones en estos cuadros."),
+            ("RIB / RIN", "Reservas internacionales brutas / netas: valor de activos externos del BCB bajo dos definiciones."),
+            ("MN / ME", "Moneda nacional (bolivianos) / moneda extranjera (por ejemplo, dólares)."),
+            ("IPC", "Índice de Precios al Consumidor: resume el precio de una canasta de bienes y servicios."),
+            ("P2P", "Intercambio entre usuarios; aquí se observa la mediana de anuncios de precios vinculados a USDT."),
+            ("USDT", "Activo digital diseñado para seguir el valor del dólar; no es un billete físico."),
+            ("TCO", "Tipo de cambio oficial diario publicado por el BCB desde el régimen flexible."),
+            ("Umbral", "Valor elegido para preguntar cuántas simulaciones caen por debajo o por encima."),
+        ]
+        st.dataframe(pd.DataFrame(terms, columns=["Sigla o término", "Significado simple"]), width="stretch", hide_index=True)
     a, b, c = st.columns(3)
     a.markdown('<div class="source-card"><div class="mini-label">Fuente principal</div><strong>BCB · Excel semanal</strong><br>Dinero, depósitos, reservas, precios y tipos de cambio. <a href="https://www.bcb.gob.bo/?q=estad-sticas-semanales">Ver listado oficial</a>.</div>', unsafe_allow_html=True)
-    b.markdown('<div class="source-card"><div class="mini-label">Precio P2P</div><strong>paralelo.bo</strong><br>Mediana histórica de anuncios P2P, licencia CC BY 4.0. Precio anunciado, no operación ejecutada. <a href="https://paralelo.bo/metodologia">Ver metodología</a>.</div>', unsafe_allow_html=True)
+    b.markdown('<div class="source-card"><div class="mini-label">Precio P2P</div><strong>paralelo.bo</strong><br>Mediana histórica de anuncios entre usuarios, licencia CC BY 4.0. Precio anunciado, no operación ejecutada. <a href="https://paralelo.bo/metodologia">Ver metodología</a>.</div>', unsafe_allow_html=True)
     c.markdown('<div class="source-card"><div class="mini-label">Oficial diario</div><strong>BCB · TCO</strong><br>CSV diario usado desde el 29 de junio de 2026. <a href="https://www.bcb.gob.bo/grafico_evolutivo/download.php?serie=tipo_de_cambio&amp;format=csv">Ver archivo BCB</a>.</div>', unsafe_allow_html=True)
     st.caption("También se conservan el PDF de activos virtuales del BCB y capturas de DolarApi/Binance. Esas cotizaciones no se mezclan con la mediana histórica P2P en H1, H3 o H5.")
 

@@ -53,6 +53,10 @@ a { color: #285c48 !important; }
 .section-note { border-left: 3px solid #ac8150; background: #f1eee3; padding: 12px 16px;
     margin: 12px 0 20px; color: #34473a; font-size: .94rem; line-height: 1.65; }
 .section-note strong { color: #173d32; }
+.example-card { background: #e6f1e6; border: 1px solid #b7d5ba; border-left: 5px solid #16805d;
+    padding: 13px 17px; margin: 12px 0 20px; color: #204634; line-height: 1.65;
+    box-shadow: 2px 3px 0 #d4e3d3; }
+.example-card strong { color: #0f5a40; }
 .mini-label { color: #8a6c41; font: 700 11px 'DM Sans',sans-serif; letter-spacing: .12em;
     text-transform: uppercase; margin-bottom: 6px; }
 .source-card { background: #fffdf8; border: 1px solid #d9d8c9; border-top: 3px solid #466c50;
@@ -74,6 +78,10 @@ def masthead() -> None:
 
 def note(title: str, body: str) -> None:
     st.markdown(f'<div class="section-note"><strong>{title}</strong><br>{body}</div>', unsafe_allow_html=True)
+
+
+def example(title: str, body: str) -> None:
+    st.markdown(f'<div class="example-card"><strong>{title}</strong><br>{body}</div>', unsafe_allow_html=True)
 
 
 def chart(container, fig: go.Figure) -> None:
@@ -102,7 +110,7 @@ VARIABLES = [
     ("depositos_mn", 92, "Depósitos", "Millones de USD del cuadro", "Saldos de depósitos en bolivianos convertidos a USD en el Excel.", "Reconstruir el saldo en Bs y neutralizar valoración."),
     ("depositos_me", 94, "Depósitos", "Millones de USD", "Saldos de depósitos denominados en moneda extranjera.", "SARIMA y bolivianización neutral."),
     ("bolivianizacion_depositos", 95, "Depósitos", "%", "Porcentaje oficial de depósitos en bolivianos, con definición propia del BCB.", "Referencia separada; no se mezcla con filas 92/94."),
-    ("rib", 141, "Reservas", "Millones de USD", "Activos externos brutos que mantiene el banco central.", "Índice, SARIMA y escenarios Monte Carlo."),
+    ("rib", 141, "Reservas", "Millones de USD", "Valor de divisas, oro monetario y otros activos externos del BCB; no solo billetes de dólar.", "Índice, SARIMA y escenarios Monte Carlo."),
     ("rin", 158, "Reservas", "Millones de USD", "Reservas netas después de los ajustes de la definición oficial.", "Contexto; no se duplica con RIB en el índice."),
     ("bolsin_sf", 167, "Divisas", "Millones de USD", "Dólares adjudicados al sistema financiero mediante Bolsín.", "Contexto de oferta oficial de divisas."),
     ("ventas_directas_sf", 169, "Divisas", "Millones de USD", "Dólares vendidos directamente al sistema financiero.", "Contexto de oferta oficial de divisas."),
