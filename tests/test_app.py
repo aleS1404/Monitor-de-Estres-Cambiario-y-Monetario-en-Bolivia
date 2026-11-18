@@ -7,7 +7,7 @@ pytest.importorskip("streamlit")
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
 PAGES = ["Semáforo del sistema", "Brecha cambiaria", "Reservas y depósitos", "Inflación",
-         "Simulador de riesgo", "Alertas", "Metodología"]
+         "Simulador de riesgo", "Alertas", "Variables y fuentes", "Metodología"]
 
 
 @pytest.fixture(scope="module")
@@ -29,3 +29,9 @@ def test_demo_brecha(app):
     assert not app.exception, [e.value for e in app.exception]
     assert any("vida media" in m.label.lower() for m in app.metric)
     app.sidebar.toggle[0].set_value(False).run()
+
+
+def test_catalogo_variables_muestra_las_18_series_bcb(app):
+    app.sidebar.radio[0].set_value("Variables y fuentes").run()
+    assert not app.exception, [e.value for e in app.exception]
+    assert any(len(table.value) == 18 and "Fila BCB" in table.value.columns for table in app.dataframe)

@@ -32,7 +32,7 @@ El Word académico toma el texto de `reports/INFORME_ACADEMICO.md` e incorpora l
 |---|---|
 | `bcb_pipeline/` | Descarga de los Excel del BCB, parseo ancho→largo, recolector P2P (DolarApi), importador del PDF de activos virtuales |
 | `stress_monitor/` | `stationarity` (cap. 1-2, 5) · `markov` (cap. 3) · `forecasting` (cap. 4, 6) · `gap` (cap. 5) · `simulation` (cap. 7) · `report` |
-| `app/streamlit_app.py` | Tablero de 7 pantallas: semáforo, brecha, reservas y depósitos, inflación, simulador, alertas, metodología |
+| `app/streamlit_app.py` | Tablero editorial de 8 pantallas: semáforo, brecha, reservas y depósitos, inflación, simulador, alertas, variables y fuentes, metodología |
 | `notebooks/` | 6 notebooks por capítulo, **ya ejecutados** (se regeneran con `python notebooks/build_notebooks.py`) |
 | `reports/` | `INFORME.md` generado con cifras reales, [`INFORME_ACADEMICO.md`](reports/INFORME_ACADEMICO.md) con marco teórico y explicación integral, [`INFORME_ACADEMICO.docx`](reports/INFORME_ACADEMICO.docx) listo para Word, `results.json`, `figures/` |
 | `docs/GUION_PRESENTACION.md` | Guion de la presentación y preguntas probables |
@@ -64,7 +64,7 @@ python -m bcb_pipeline fetch-history                # actualiza mediana P2P y TC
 | Componente | Estado |
 |---|---|
 | Parseo del Excel, análisis, informe, notebooks | ✅ Probado con Excel reales descargados del BCB |
-| Tablero | ✅ Las 7 pantallas ejecutan sin excepciones (AppTest). ⚠️ No se hizo revisión visual en navegador |
+| Tablero | ✅ Las 8 pantallas ejecutan sin excepciones (AppTest); portada revisada visualmente en navegador |
 | Importador PDF del BCB | ✅ Probado con `HISTORICO.pdf` completo (15 filas de 2024); no se encontraron PDF históricos verificables de 2025-2026 |
 | Descarga en vivo del BCB | ✅ Probada: último Excel y 50 archivos desde 2025 según el listado disponible; cobertura semanal de 2025 incompleta |
 | Recolector DolarApi | ✅ JSON real de `/binance` y `/oficial` verificado; una captura real guardada |
